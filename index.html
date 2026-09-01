@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>خزنة</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="خزنة">
+<meta name="theme-color" content="#0f766e">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{
+  --bg:#f4f7f8; --card:#ffffff; --text:#0f1f1e; --muted:#5f6f6e; --line:#e3e9e9;
+  --accent:#0f766e; --accent2:#14b8a6; --accent-soft:#d9f2ee; --danger:#dc2626; --warn:#d97706;
+  --shadow:0 6px 24px rgba(15,31,30,.08); --r:18px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){ --bg:#0b1514; --card:#132221; --text:#eef5f4; --muted:#9db3b1; --line:#1f3331; --accent:#2dd4bf; --accent2:#14b8a6; --accent-soft:#12302d; --shadow:0 6px 24px rgba(0,0,0,.35); }
+}
+:root[data-theme="dark"]{ --bg:#0b1514; --card:#132221; --text:#eef5f4; --muted:#9db3b1; --line:#1f3331; --accent:#2dd4bf; --accent2:#14b8a6; --accent-soft:#12302d; --shadow:0 6px 24px rgba(0,0,0,.35); }
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font-family:'Tajawal',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.5;overflow:hidden;-webkit-font-smoothing:antialiased}
+#app{max-width:540px;margin:0 auto;height:100%;position:relative}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.screen.on{display:flex}
+.screen:not(.on){display:none!important}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+h1{font-size:28px;margin:0;font-weight:800}
+h2{font-size:20px;margin:0 0 8px;font-weight:800}
+h3{font-size:16px;margin:16px 0 8px;font-weight:700;color:var(--muted)}
+p{margin:0 0 12px}
+.muted{color:var(--muted);font-size:14px}
+.small{font-size:13px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
+.field{position:relative;margin-bottom:12px}
+.field input,.field select{width:100%;padding:14px 14px 14px 44px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);font:inherit;font-size:16px;outline:none;direction:ltr;text-align:left}
+.field input[dir=rtl]{direction:rtl;text-align:right}
+.field input:focus{border-color:var(--accent)}
+.field label{display:block;font-size:13px;color:var(--muted);margin:0 4px 4px}
+.field .eye{position:absolute;left:10px;bottom:10px;background:none;border:0;color:var(--muted);padding:4px;cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 18px;border:0;border-radius:14px;background:var(--accent);color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:.15s;text-decoration:none}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.55}
+.btn.ghost{background:var(--accent-soft);color:var(--accent)}
+.btn.light{background:var(--card);color:var(--text);border:1.5px solid var(--line)}
+.btn.danger{background:var(--danger)}
+.btn.sm{width:auto;padding:8px 14px;font-size:14px;border-radius:10px}
+.link{background:none;border:0;color:var(--accent);font:inherit;font-weight:700;cursor:pointer;padding:8px}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1}
+.err{color:var(--danger);font-size:14px;min-height:20px;margin:4px 0}
+.ok{color:var(--accent);font-size:14px}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* logo */
+.logo{width:88px;height:88px;border-radius:24px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:var(--shadow);margin-bottom:14px}
+.logo svg{width:52px;height:52px}
+/* avatar */
+.avatar{width:120px;height:120px;border-radius:50%;background:var(--accent-soft);border:4px solid var(--card);box-shadow:var(--shadow);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--accent);position:relative;cursor:pointer}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar .edit{position:absolute;bottom:2px;left:2px;background:var(--accent);color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:2px solid var(--card)}
+.avatar.sm{width:44px;height:44px;border-width:2px}
+/* header */
+.hdr{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--bg);position:relative;z-index:2}
+.hdr h2{flex:1;margin:0;font-size:18px}
+.icbtn{width:42px;height:42px;border-radius:12px;border:0;background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow);flex:none}
+.icbtn.plain{background:none;box-shadow:none}
+/* home actions */
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 6px}
+.act{display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--card);border-radius:16px;padding:14px 6px;box-shadow:var(--shadow);border:0;font:inherit;color:var(--text);cursor:pointer;font-size:13px;font-weight:700}
+.act .ic{width:46px;height:46px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.act .ic svg{width:24px;height:24px}
+/* quota */
+.quota{height:6px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:6px}
+.quota i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:.4s}
+/* folders */
+.folders{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.folder{background:var(--card);border-radius:16px;padding:14px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;gap:10px;border:0;font:inherit;color:var(--text);text-align:right;position:relative}
+.folder .fi{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.folder .fi svg{width:22px;height:22px}
+.folder b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.folder small{color:var(--muted);font-size:12px}
+.folder .more{position:absolute;top:6px;left:6px;background:none;border:0;color:var(--muted);padding:4px;cursor:pointer}
+.folders.list{grid-template-columns:1fr}
+/* files */
+.files{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.file{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;border:0;padding:0;font:inherit;color:var(--text);text-align:right;display:flex;flex-direction:column}
+.file .th{aspect-ratio:1;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);overflow:hidden}
+.file .th img{width:100%;height:100%;object-fit:cover}
+.file .th svg{width:34px;height:34px}
+.file .nm{padding:6px 8px;font-size:12px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file .dt{padding:0 8px 6px;font-size:11px;color:var(--muted)}
+.files.list{grid-template-columns:1fr}
+.files.list .file{flex-direction:row;align-items:center}
+.files.list .file .th{width:56px;height:56px;aspect-ratio:auto;flex:none}
+.files.list .file .th svg{width:24px;height:24px}
+.files.list .file .nm{white-space:normal;font-size:14px;flex:1}
+.empty{text-align:center;color:var(--muted);padding:40px 16px}
+.empty svg{width:56px;height:56px;opacity:.5;margin-bottom:8px}
+/* tabbar */
+.tabbar{position:absolute;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
+.tab{flex:1;background:none;border:0;color:var(--muted);font:inherit;font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;cursor:pointer;border-radius:12px}
+.tab.on{color:var(--accent)}
+.tab svg{width:24px;height:24px}
+.fab{position:absolute;bottom:calc(76px + env(safe-area-inset-bottom));left:18px;width:58px;height:58px;border-radius:20px;background:var(--accent);color:#fff;border:0;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(15,118,110,.4);cursor:pointer;z-index:6}
+.fab svg{width:28px;height:28px}
+/* sheet / modal */
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.overlay.on{display:flex}
+.sheet{background:var(--card);width:100%;max-height:85%;border-radius:22px 22px 0 0;padding:14px 16px calc(20px + env(safe-area-inset-bottom));overflow-y:auto;animation:up .2s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheet .handle{width:44px;height:5px;border-radius:5px;background:var(--line);margin:0 auto 12px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;padding:13px 8px;border:0;background:none;font:inherit;font-size:16px;color:var(--text);cursor:pointer;border-radius:12px;text-align:right}
+.opt:active{background:var(--accent-soft)}
+.opt.danger{color:var(--danger)}
+.opt .ic{width:38px;height:38px;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.opt.danger .ic{background:#fee2e2;color:var(--danger)}
+.pick{display:flex;align-items:center;gap:10px;width:100%;padding:12px 8px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;font-size:16px;color:var(--text);cursor:pointer;text-align:right}
+.pick .fi{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.pick .fi svg{width:20px;height:20px}
+.pick.sel{background:var(--accent-soft)}
+.colors{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
+.colors b{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent}
+.colors b.sel{border-color:var(--text)}
+/* upload panel */
+.up{background:var(--card);border-radius:14px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:8px}
+.up .bar{height:5px;background:var(--line);border-radius:5px;overflow:hidden;margin-top:6px}
+.up .bar i{display:block;height:100%;background:var(--accent);width:0;transition:.2s}
+.badge{display:inline-block;background:var(--accent-soft);color:var(--accent);font-size:12px;padding:2px 8px;border-radius:8px;font-weight:700}
+.badge.warn{background:#fef3c7;color:var(--warn)}
+.badge.err{background:#fee2e2;color:var(--danger)}
+.toast{position:absolute;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:14px;font-size:14px;z-index:50;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1}
+.sw{position:relative;width:46px;height:26px;background:var(--line);border-radius:26px;cursor:pointer;flex:none;transition:.2s}
+.sw:after{content:'';position:absolute;top:3px;right:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s}
+.sw.on{background:var(--accent)}
+.sw.on:after{right:23px}
+.setrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.setrow:last-child{border:0}
+.setrow .t{flex:1}
+.setrow .t small{display:block;color:var(--muted);font-size:12px}
+.chips{display:flex;gap:6px}
+.chip{padding:6px 12px;border-radius:10px;border:1.5px solid var(--line);background:none;font:inherit;font-size:13px;color:var(--text);cursor:pointer}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.demo{position:absolute;top:calc(6px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#fef3c7;color:#92400e;font-size:11px;padding:2px 10px;border-radius:8px;z-index:60;font-weight:700}
+.search-in{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:14px;padding:4px 12px;box-shadow:var(--shadow);margin:0 16px 8px}
+.search-in input{flex:1;border:0;background:none;font:inherit;font-size:16px;padding:10px 0;outline:none;color:var(--text)}
+.steps{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
+.steps i{width:28px;height:5px;border-radius:5px;background:var(--line)}
+.steps i.on{background:var(--accent)}
+.breadcrumb{font-size:13px;color:var(--muted)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="demo hidden" id="demoBadge">وضع العرض التجريبي — بدون اتصال فعلي</div>
+<!-- splash -->
+<div class="screen on center" id="s-splash"><div class="logo" id="logoSplash"></div><div class="spinner"></div></div>
+
+<!-- login -->
+<div class="screen" id="s-login">
+ <div class="scroll center" style="justify-content:center">
+  <div class="logo" data-logo></div>
+  <h1>خزنة</h1>
+  <p class="muted">صورك وملفاتك محفوظة في Google Drive</p>
+  <div class="card" style="width:100%;margin-top:14px;text-align:right">
+   <div class="field"><label>البريد (Gmail)</label><input type="email" id="lEmail" autocomplete="username" inputmode="email" placeholder="name@gmail.com"></div>
+   <div class="field"><label>كلمة مرور التطبيق</label><input type="password" id="lPass" autocomplete="current-password" placeholder="••••••••"><button class="eye" data-eye="lPass"><svg class="i"><use href="#i-eye"/></svg></button></div>
+   <div class="err" id="lErr"></div>
+   <button class="btn" id="btnLogin">دخول</button>
+   <div class="row" style="justify-content:space-between;margin-top:6px">
+    <button class="link" id="btnGoReg">مستخدم جديد</button>
+    <button class="link" id="btnForgot">نسيت كلمة المرور</button>
+   </div>
+  </div>
+  <p class="muted small" style="margin-top:18px">يدخل مدير النظام من نفس الشاشة ببريده وكلمة مروره</p>
+ </div>
+</div>
+
+<!-- register -->
+<div class="screen" id="s-register">
+ <div class="hdr"><button class="icbtn plain" data-back="s-login"><svg class="i"><use href="#i-back"/></svg></button><h2>حساب جديد</h2></div>
+ <div class="scroll">
+  <div class="steps"><i class="on"></i><i id="st2"></i></div>
+  <div class="card" id="regStep1">
+   <h2>١. اربط حساب Google</h2>
+   <p class="muted">سيُطلب منك اختيار حساب Gmail والسماح للتطبيق بإنشاء مجلدات ورفع ملفات إلى Google Drive الخاص به. لا يرى التطبيق إلا الملفات التي يرفعها هو.</p>
+   <button class="btn" id="btnLinkGoogle"><svg class="i"><use href="#i-google"/></svg> ربط حساب Google</button>
+   <div class="err" id="rErr1"></div>
+  </div>
+  <div class="card hidden" id="regStep2">
+   <h2>٢. كلمة مرور التطبيق</h2>
+   <p class="muted">تُستخدم لفتح التطبيق على هذا الجهاز أو أي جهاز آخر. لا علاقة لها بكلمة مرور Google.</p>
+   <div class="field"><label>الحساب المرتبط</label><input type="email" id="rEmail" readonly></div>
+   <div class="field"><label>الاسم</label><input type="text" id="rName" dir="rtl" placeholder="اسمك"></div>
+   <div class="field"><label>كلمة المرور (6 أحرف على الأقل)</label><input type="password" id="rPass" autocomplete="new-password"><button class="eye" data-eye="rPass"><svg class="i"><use href="#i-eye"/></svg></button></div>
+   <div class="field"><label>تأكيد كلمة المرور</label><input type="password" id="rPass2" autocomplete="new-password"></div>
+   <div class="err" id="rErr2"></div>
+   <button class="btn" id="btnRegister">إنشاء الحساب</button>
+  </div>
+ </div>
+</div>
+
+<!-- link google (existing user, no token) -->
+<div class="screen" id="s-link">
+ <div class="scroll center" style="justify-content:center">
+  <div class="logo" data-logo></div>
+  <h2>ربط Google Drive</h2>
+  <p class="muted" id="linkMsg">لرفع الملفات نحتاج إذن الوصول إلى Google Drive الخاص بالحساب <b id="linkEmail"></b></p>
+  <button class="btn" id="btnRelink" style="max-width:320px"><svg class="i"><use href="#i-google"/></svg> ربط حساب Google</button>
+  <div class="err" id="linkErr"></div>
+  <button class="link" id="btnLinkLogout">تسجيل الخروج</button>
+ </div>
+</div>
+
+<!-- lock -->
+<div class="screen" id="s-lock">
+ <div class="scroll center" style="justify-content:center">
+  <div class="avatar" id="lockAvatar"><svg class="i" style="width:56px;height:56px"><use href="#i-user"/></svg></div>
+  <h2 style="margin-top:14px" id="lockName">مرحبًا</h2>
+  <p class="muted" id="lockEmail"></p>
+  <div class="card" style="width:100%;text-align:right">
+   <div class="field"><label>كلمة مرور التطبيق</label><input type="password" id="kPass" autocomplete="current-password"><button class="eye" data-eye="kPass"><svg class="i"><use href="#i-eye"/></svg></button></div>
+   <div class="err" id="kErr"></div>
+   <button class="btn" id="btnUnlock">فتح</button>
+   <button class="btn ghost hidden" id="btnBio" style="margin-top:8px"><svg class="i"><use href="#i-finger"/></svg> فتح بالبصمة / الوجه</button>
+  </div>
+  <button class="link" id="btnLockLogout" style="margin-top:10px">تبديل الحساب</button>
+ </div>
+</div>
+
+<!-- home -->
+<div class="screen" id="s-home">
+ <div class="hdr"><h2>خزنة</h2><button class="icbtn" id="btnHomeSearch"><svg class="i"><use href="#i-search"/></svg></button><button class="icbtn" id="btnHomeSettings"><svg class="i"><use href="#i-settings"/></svg></button></div>
+ <div class="scroll">
+  <div class="center">
+   <div class="avatar" id="homeAvatar"><svg class="i" style="width:56px;height:56px"><use href="#i-user"/></svg><span class="edit"><svg class="i" style="width:16px;height:16px"><use href="#i-camera"/></svg></span></div>
+   <h2 style="margin-top:10px" id="homeName">مرحبًا</h2>
+   <p class="muted small" id="homeEmail"></p>
+  </div>
+  <div class="card" style="padding:12px 16px">
+   <div class="row"><span class="muted small grow">مساحة Google Drive</span><span class="small" id="quotaTxt">…</span></div>
+   <div class="quota"><i id="quotaBar"></i></div>
+  </div>
+  <div class="actions">
+   <button class="act" id="aCam"><span class="ic"><svg class="i"><use href="#i-camera"/></svg></span>كاميرا</button>
+   <button class="act" id="aGal"><span class="ic"><svg class="i"><use href="#i-image"/></svg></span>الصور</button>
+   <button class="act" id="aFile"><span class="ic"><svg class="i"><use href="#i-file"/></svg></span>ملفات</button>
+   <button class="act" id="aNewFolder"><span class="ic"><svg class="i"><use href="#i-folderplus"/></svg></span>مجلد جديد</button>
+  </div>
+  <div id="uploadPanel"></div>
+  <div class="row"><h3 class="grow">المجلدات</h3><button class="link small" id="btnAllFolders">الكل</button></div>
+  <div class="folders" id="homeFolders"></div>
+  <h3>آخر الملفات</h3>
+  <div class="files list" id="homeRecent"></div>
+ </div>
+ <div class="tabbar" data-tabs>
+  <button class="tab on" data-go="s-home"><svg class="i"><use href="#i-home"/></svg>الرئيسية</button>
+  <button class="tab" data-go="s-folders"><svg class="i"><use href="#i-folder"/></svg>المجلدات</button>
+  <button class="tab" data-go="s-search"><svg class="i"><use href="#i-search"/></svg>بحث</button>
+  <button class="tab" data-go="s-settings"><svg class="i"><use href="#i-settings"/></svg>الإعدادات</button>
+ </div>
+</div>
+
+<!-- folders -->
+<div class="screen" id="s-folders">
+ <div class="hdr"><h2>المجلدات</h2><button class="icbtn" id="btnFoldersView"><svg class="i"><use href="#i-list"/></svg></button><button class="icbtn" id="btnFoldersNew"><svg class="i"><use href="#i-folderplus"/></svg></button></div>
+ <div class="scroll"><div class="folders" id="allFolders"></div></div>
+ <div class="tabbar" data-tabs>
+  <button class="tab" data-go="s-home"><svg class="i"><use href="#i-home"/></svg>الرئيسية</button>
+  <button class="tab on" data-go="s-folders"><svg class="i"><use href="#i-folder"/></svg>المجلدات</button>
+  <button class="tab" data-go="s-search"><svg class="i"><use href="#i-search"/></svg>بحث</button>
+  <button class="tab" data-go="s-settings"><svg class="i"><use href="#i-settings"/></svg>الإعدادات</button>
+ </div>
+</div>
+
+<!-- folder contents -->
+<div class="screen" id="s-folder">
+ <div class="hdr"><button class="icbtn plain" data-back="s-folders"><svg class="i"><use href="#i-back"/></svg></button><h2 id="folderTitle">المجلد</h2><button class="icbtn" id="btnFolderView"><svg class="i"><use href="#i-list"/></svg></button><button class="icbtn" id="btnFolderMore"><svg class="i"><use href="#i-more"/></svg></button></div>
+ <div class="scroll"><div id="folderUploadPanel"></div><div class="files" id="folderFiles"></div></div>
+ <button class="fab" id="fabUpload"><svg class="i"><use href="#i-plus"/></svg></button>
+</div>
+
+<!-- search -->
+<div class="screen" id="s-search">
+ <div class="hdr"><h2>بحث</h2></div>
+ <div class="search-in"><svg class="i" style="color:var(--muted)"><use href="#i-search"/></svg><input id="qIn" placeholder="ابحث باسم الملف أو محتواه…" dir="rtl"><button class="icbtn plain hidden" id="qClear"><svg class="i"><use href="#i-x"/></svg></button></div>
+ <div class="chips" style="padding:0 16px 8px"><button class="chip on" data-ft="">الكل</button><button class="chip" data-ft="image">صور</button><button class="chip" data-ft="pdf">PDF</button><button class="chip" data-ft="video">فيديو</button><button class="chip" data-ft="doc">مستندات</button></div>
+ <div class="scroll" style="padding-top:0"><div class="files list" id="qRes"><div class="empty"><svg class="i"><use href="#i-search"/></svg><br>اكتب كلمة للبحث في كل ملفاتك</div></div></div>
+ <div class="tabbar" data-tabs>
+  <button class="tab" data-go="s-home"><svg class="i"><use href="#i-home"/></svg>الرئيسية</button>
+  <button class="tab" data-go="s-folders"><svg class="i"><use href="#i-folder"/></svg>المجلدات</button>
+  <button class="tab on" data-go="s-search"><svg class="i"><use href="#i-search"/></svg>بحث</button>
+  <button class="tab" data-go="s-settings"><svg class="i"><use href="#i-settings"/></svg>الإعدادات</button>
+ </div>
+</div>
+
+<!-- settings -->
+<div class="screen" id="s-settings">
+ <div class="hdr"><h2>الإعدادات</h2></div>
+ <div class="scroll">
+  <div class="card center"><div class="avatar" id="setAvatar"><svg class="i" style="width:56px;height:56px"><use href="#i-user"/></svg><span class="edit"><svg class="i" style="width:16px;height:16px"><use href="#i-camera"/></svg></span></div>
+   <div class="field" style="width:100%;margin-top:12px;text-align:right"><label>الاسم</label><input type="text" id="setName" dir="rtl"></div>
+   <button class="btn sm ghost" id="btnSaveName">حفظ الاسم</button>
+  </div>
+  <h3>الرفع</h3>
+  <div class="card">
+   <div class="setrow"><div class="t">جودة الصور عند الرفع<small>الأصلية = بدون تغيير، متوسطة ≈ 1600px</small></div></div>
+   <div class="chips" id="compChips"><button class="chip" data-c="original">الأصلية</button><button class="chip" data-c="medium">متوسطة</button><button class="chip" data-c="small">صغيرة</button></div>
+   <div class="setrow" style="margin-top:8px"><div class="t">تسمية تلقائية بالتاريخ<small>مثال: 2026-09-01_المجلد_01.jpg</small></div><div class="sw" id="swAutoName"></div></div>
+  </div>
+  <h3>الأمان</h3>
+  <div class="card">
+   <div class="setrow"><div class="t">فتح بالبصمة / الوجه<small>بدل كتابة كلمة المرور عند كل فتح</small></div><div class="sw" id="swBio"></div></div>
+   <div class="setrow"><div class="t">عدم طلب كلمة المرور على هذا الجهاز<small>يبقى التطبيق مفتوحًا</small></div><div class="sw" id="swRemember"></div></div>
+   <button class="btn light" id="btnChangePass" style="margin-top:8px">تغيير كلمة مرور التطبيق</button>
+  </div>
+  <h3>الحساب</h3>
+  <div class="card">
+   <div class="setrow"><div class="t">Google Drive<small id="setEmail"></small></div><span class="badge" id="setLinkBadge">مرتبط</span></div>
+   <div class="setrow"><div class="t">مجلد التطبيق في الدرايف<small>يظهر في My Drive باسم «خزنة»</small></div><button class="btn sm light" id="btnOpenDrive">فتح</button></div>
+   <button class="btn light" id="btnRelinkSet" style="margin-top:8px">إعادة ربط حساب Google</button>
+   <button class="btn danger" id="btnLogout" style="margin-top:8px">تسجيل الخروج</button>
+  </div>
+  <p class="muted small center" style="margin-top:14px">خزنة v1.0</p>
+ </div>
+ <div class="tabbar" data-tabs>
+  <button class="tab" data-go="s-home"><svg class="i"><use href="#i-home"/></svg>الرئيسية</button>
+  <button class="tab" data-go="s-folders"><svg class="i"><use href="#i-folder"/></svg>المجلدات</button>
+  <button class="tab" data-go="s-search"><svg class="i"><use href="#i-search"/></svg>بحث</button>
+  <button class="tab on" data-go="s-settings"><svg class="i"><use href="#i-settings"/></svg>الإعدادات</button>
+ </div>
+</div>
+
+<!-- blocked / expired -->
+<div class="screen" id="s-blocked">
+ <div class="scroll center" style="justify-content:center"><div class="logo" data-logo></div><h2 id="blockTitle">الحساب موقوف</h2><p class="muted" id="blockMsg"></p><button class="link" id="btnBlockLogout">تسجيل الخروج</button></div>
+</div>
+
+<!-- generic overlay -->
+<div class="overlay" id="ov"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="inCam" accept="image/*" capture="environment" class="hidden">
+<input type="file" id="inGal" accept="image/*,video/*" multiple class="hidden">
+<input type="file" id="inFile" multiple class="hidden">
+<input type="file" id="inAvatar" accept="image/*" class="hidden">
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+<defs>
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.7-8.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17.5 18H7z" fill="#fff" stroke="none"/><path d="M12 16v-5m0 0-2.2 2.2M12 11l2.2 2.2" stroke="#0f766e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+<symbol id="i-google" viewBox="0 0 24 24"><path d="M21 12.2c0-.7-.1-1.3-.2-1.9H12v3.6h5.1a4.4 4.4 0 0 1-1.9 2.9v2.4h3.1c1.8-1.7 2.7-4.1 2.7-7z" fill="#4285F4" stroke="none"/><path d="M12 21c2.6 0 4.8-.9 6.3-2.3l-3.1-2.4c-.9.6-2 .9-3.2.9-2.5 0-4.6-1.7-5.3-3.9H3.5v2.5A9 9 0 0 0 12 21z" fill="#34A853" stroke="none"/><path d="M6.7 13.3A5.4 5.4 0 0 1 6.4 12c0-.5.1-.9.3-1.3V8.2H3.5a9 9 0 0 0 0 7.6l3.2-2.5z" fill="#FBBC05" stroke="none"/><path d="M12 6.6c1.4 0 2.7.5 3.7 1.4l2.7-2.7A9 9 0 0 0 3.5 8.2l3.2 2.5C7.4 8.5 9.5 6.6 12 6.6z" fill="#EA4335" stroke="none"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 8"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-folderplus" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6m-3-3h6"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+<symbol id="i-move" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 13h6m-2.5-2.5L15 13l-2.5 2.5"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></symbol>
+<symbol id="i-open" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></symbol>
+<symbol id="i-finger" viewBox="0 0 24 24"><path d="M12 11a2 2 0 0 0-2 2v3c0 2 1 3 2 4"/><path d="M8 13v2c0 3 1.5 5 3 6"/><path d="M16 13v2a8 8 0 0 1-1 4"/><path d="M6 10a6 6 0 0 1 12 0v1"/><path d="M4.5 12.5A8 8 0 0 1 4 10a8 8 0 0 1 14-5.3"/></symbol>
+<symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></symbol>
+<symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 17v-5h1.5a1.5 1.5 0 0 1 0 3H9"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+<symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.7-8.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17.5 18H7z"/><path d="m3 3 18 18"/></symbol>
+</defs>
+</svg>
+
+<script>
+/* ===================== CONFIG ===================== */
+const CONFIG = {
+  firebase: {
+    apiKey: "AIzaSyC6In0r987jy3FUizv7xqVJxwnOTL6eHS4", authDomain: "khazna-65078.firebaseapp.com", databaseURL: "https://khazna-65078-default-rtdb.europe-west1.firebasedatabase.app", projectId: "khazna-65078", storageBucket: "khazna-65078.firebasestorage.app", messagingSenderId: "854348562788", appId: "1:854348562788:web:ffac12e5216cd649d53a71"
+  },
+  adminEmail: "a0545777031@gmail.com",
+  googleClientId: "854348562788-bdj4f2gh1m5ktv4d48e3b7p693duuu2p.apps.googleusercontent.com",
+  rootFolderName: "خزنة",
+  version: "1.0"
+};
+const DEMO = !CONFIG.firebase.apiKey || typeof firebase === 'undefined' || /claude|localhost/.test(location.hostname);
+const DRIVE = 'https://www.googleapis.com/drive/v3/';
+const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
+const FOLDER_MIME = 'application/vnd.google-apps.folder';
+const PALETTE = ['#4986e7','#16a765','#fbe983','#fb4c2f','#ff7537','#9a9cff','#f691b2','#8f8f8f','#42d692','#ffad46','#b99aff','#7bd148'];
+
+/* ===================== STATE ===================== */
+const S = { user:null, profile:null, email:null, token:null, rootId:null, folders:[], currentFolder:null, files:[], recent:[], view:{folders:'grid',files:'grid'}, settings:{}, thumbs:new Map(), pending:null, ft:'' };
+const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let auth, db;
+if (!DEMO) { firebase.initializeApp(CONFIG.firebase); auth = firebase.auth(); db = firebase.database(); }
+else $('demoBadge').classList.remove('hidden');
+document.querySelectorAll('[data-logo],#logoSplash').forEach(e => e.innerHTML = '<svg viewBox="0 0 24 24"><use href="#i-logo"/></svg>');
+
+/* ===================== UI HELPERS ===================== */
+function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id===id)); window.scrollTo(0,0); }
+function toast(msg, ms=2200){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'), ms); }
+function sheet(html){ $('sheet').innerHTML = '<div class="handle"></div>'+html; $('ov').classList.add('on'); }
+function closeSheet(){ $('ov').classList.remove('on'); }
+$('ov').addEventListener('click', e => { if (e.target===$('ov')) closeSheet(); });
+document.querySelectorAll('[data-eye]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); const i=$(b.dataset.eye); i.type = i.type==='password'?'text':'password'; }));
+document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show(b.dataset.back)));
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+function go(id){ show(id); if (id==='s-folders') renderAllFolders(); if (id==='s-settings') renderSettings(); if (id==='s-search') setTimeout(()=>$('qIn').focus(),100); if (id==='s-home') loadHome(); }
+function prompt2(title, value='', placeholder=''){ return new Promise(res => {
+  sheet(`<h2>${title}</h2><div class="field"><input id="pIn" dir="rtl" value="${esc(value)}" placeholder="${esc(placeholder)}"></div><div class="row"><button class="btn light" id="pCancel">إلغاء</button><button class="btn" id="pOk">موافق</button></div>`);
+  setTimeout(()=>{$('pIn').focus(); $('pIn').select();},100);
+  $('pCancel').onclick=()=>{closeSheet();res(null)};
+  $('pOk').onclick=()=>{const v=$('pIn').value.trim(); closeSheet(); res(v||null)};
+  $('pIn').onkeydown=e=>{ if(e.key==='Enter') $('pOk').click(); };
+});}
+function confirm2(title, msg, okText='تأكيد', danger=true){ return new Promise(res => {
+  sheet(`<h2>${title}</h2><p class="muted">${msg}</p><div class="row"><button class="btn light" id="cCancel">إلغاء</button><button class="btn ${danger?'danger':''}" id="cOk">${okText}</button></div>`);
+  $('cCancel').onclick=()=>{closeSheet();res(false)}; $('cOk').onclick=()=>{closeSheet();res(true)};
+});}
+const fmtSize = n => { n=+n||0; if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(0)+' KB'; if(n<1073741824) return (n/1048576).toFixed(1)+' MB'; return (n/1073741824).toFixed(2)+' GB'; };
+const fmtDate = s => { if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn',{year:'numeric',month:'short',day:'numeric'})+' '+d.toLocaleTimeString('ar-SA-u-ca-gregory-nu-latn',{hour:'2-digit',minute:'2-digit'}); };
+function fileIcon(m=''){ if(m.startsWith('image/')) return 'i-image'; if(m.startsWith('video/')) return 'i-video'; if(m.includes('pdf')) return 'i-pdf'; return 'i-file'; }
+function settingsLoad(){ try{ S.settings = Object.assign({compress:'medium', autoName:false, bio:false, remember:false}, JSON.parse(localStorage.getItem('kz_settings')||'{}')); }catch{ S.settings={compress:'medium'}; } }
+function settingsSave(){ localStorage.setItem('kz_settings', JSON.stringify(S.settings)); }
+settingsLoad();
+
+/* ===================== GOOGLE OAUTH (redirect, implicit) ===================== */
+function redirectUri(){ let p = location.pathname.replace(/index\.html$/,''); return location.origin + p; }
+function tokenKey(email){ return 'kz_tok_'+(email||'').toLowerCase(); }
+function loadToken(email){ try{ const t=JSON.parse(localStorage.getItem(tokenKey(email))||'null'); return t && t.expires_at > Date.now()+30000 ? t : null; }catch{ return null; } }
+function saveToken(email, t){ localStorage.setItem(tokenKey(email), JSON.stringify(t)); }
+function googleAuth(state, hint, prompt){
+  if (DEMO) { demoOAuthReturn(state); return; }
+  const p = new URLSearchParams({ client_id: CONFIG.googleClientId, redirect_uri: redirectUri(), response_type:'token', scope:'openid email profile https://www.googleapis.com/auth/drive.file', include_granted_scopes:'true', state: JSON.stringify(state) });
+  if (hint) p.set('login_hint', hint);
+  if (prompt) p.set('prompt', prompt);
+  sessionStorage.setItem('kz_unlocked','1');
+  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p.toString();
+}
+async function handleOAuthReturn(){
+  if (!location.hash || location.hash.length<2) return null;
+  const h = new URLSearchParams(location.hash.slice(1));
+  let st = {}; try{ st = JSON.parse(h.get('state')||'{}'); }catch{}
+  history.replaceState(null, '', location.pathname + location.search);
+  if (h.get('error')) return { error: h.get('error'), st };
+  if (!h.get('access_token')) return null;
+  const tok = { access_token: h.get('access_token'), expires_at: Date.now() + (+h.get('expires_in')||3600)*1000 };
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers:{ Authorization:'Bearer '+tok.access_token } });
+    const info = await r.json();
+    tok.email = (info.email||'').toLowerCase(); tok.name = info.name||''; tok.picture = info.picture||'';
+  } catch(e){ return { error:'userinfo', st }; }
+  return { tok, st };
+}
+async function ensureToken(interactive=true){
+  const t = loadToken(S.email);
+  if (t) { S.token = t; return t; }
+  if (!interactive) throw new Error('no-token');
+  const tried = sessionStorage.getItem('kz_silent_try');
+  if (!tried) { sessionStorage.setItem('kz_silent_try','1'); googleAuth({a:'reauth'}, S.email, 'none'); }
+  else { sessionStorage.removeItem('kz_silent_try'); showLink('انتهت صلاحية إذن Google Drive، اضغط لإعادة الربط.'); }
+  throw new Error('redirecting');
+}
+function showLink(msg){ $('linkEmail').textContent = S.email||''; if (msg) $('linkErr').textContent = msg; show('s-link'); }
+
+/* ===================== DRIVE API ===================== */
+async function drive(path, opts={}){
+  const t = await ensureToken();
+  const headers = Object.assign({ Authorization:'Bearer '+t.access_token }, opts.headers||{});
+  if (opts.json) { headers['Content-Type']='application/json'; opts.body = JSON.stringify(opts.json); }
+  const r = await fetch(path.startsWith('http')?path:DRIVE+path, { method: opts.method||'GET', headers, body: opts.body });
+  if (r.status===401) { localStorage.removeItem(tokenKey(S.email)); S.token=null; await ensureToken(); throw new Error('auth'); }
+  if (r.status===403) { let e={}; try{e=await r.json();}catch{} throw new Error(e.error?.message||'403'); }
+  if (!r.ok) { let e={}; try{e=await r.json();}catch{} throw new Error(e.error?.message||('HTTP '+r.status)); }
+  if (r.status===204) return {};
+  return r.json();
+}
+const q = s => s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+const FIELDS = 'id,name,mimeType,size,modifiedTime,createdTime,thumbnailLink,webViewLink,webContentLink,parents,folderColorRgb,shared';
+async function ensureRoot(){
+  if (S.rootId) return S.rootId;
+  const cacheKey = 'kz_root_'+S.email;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) { try { const f = await drive(`files/${cached}?fields=id,trashed`); if (!f.trashed) { S.rootId = cached; return cached; } } catch{} }
+  const res = await drive(`files?q=${encodeURIComponent(`name='${q(CONFIG.rootFolderName)}' and mimeType='${FOLDER_MIME}' and trashed=false and 'root' in parents`)}&fields=files(id)`);
+  let id = res.files?.[0]?.id;
+  if (!id) { const f = await drive('files?fields=id', { method:'POST', json:{ name: CONFIG.rootFolderName, mimeType: FOLDER_MIME, folderColorRgb:'#16a765' } }); id = f.id; }
+  localStorage.setItem(cacheKey, id); S.rootId = id; return id;
+}
+async function listFolders(){
+  const root = await ensureRoot();
+  const res = await drive(`files?q=${encodeURIComponent(`'${root}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`)}&fields=files(${FIELDS})&orderBy=name&pageSize=200`);
+  S.folders = res.files||[]; localStorage.setItem('kz_folders_'+S.email, JSON.stringify(S.folders)); return S.folders;
+}
+async function createFolder(name, color){
+  const root = await ensureRoot();
+  const f = await drive(`files?fields=${FIELDS}`, { method:'POST', json:{ name, mimeType:FOLDER_MIME, parents:[root], folderColorRgb: color||PALETTE[S.folders.length%PALETTE.length] } });
+  S.folders.push(f); S.folders.sort((a,b)=>a.name.localeCompare(b.name,'ar')); return f;
+}
+async function listFiles(folderId){
+  const res = await drive(`files?q=${encodeURIComponent(`'${folderId}' in parents and trashed=false and mimeType!='${FOLDER_MIME}'`)}&fields=files(${FIELDS})&orderBy=modifiedTime desc&pageSize=200`);
+  return res.files||[];
+}
+async function listRecent(){
+  const root = await ensureRoot();
+  const res = await drive(`files?q=${encodeURIComponent(`trashed=false and mimeType!='${FOLDER_MIME}'`)}&fields=files(${FIELDS})&orderBy=modifiedTime desc&pageSize=12`);
+  return (res.files||[]);
+}
+async function searchFiles(text, ft){
+  let qs = `trashed=false and mimeType!='${FOLDER_MIME}'`;
+  if (text) qs += ` and (name contains '${q(text)}' or fullText contains '${q(text)}')`;
+  if (ft==='image') qs += " and mimeType contains 'image/'"; if (ft==='video') qs += " and mimeType contains 'video/'"; if (ft==='pdf') qs += " and mimeType='application/pdf'";
+  if (ft==='doc') qs += " and (mimeType contains 'document' or mimeType contains 'text' or mimeType contains 'sheet' or mimeType contains 'presentation' or mimeType contains 'word')";
+  const res = await drive(`files?q=${encodeURIComponent(qs)}&fields=files(${FIELDS})&orderBy=modifiedTime desc&pageSize=100`);
+  return res.files||[];
+}
+const renameFile = (id, name) => drive(`files/${id}?fields=${FIELDS}`, { method:'PATCH', json:{ name } });
+const trashFile = id => drive(`files/${id}`, { method:'PATCH', json:{ trashed:true } });
+const moveFile = (id, from, to) => drive(`files/${id}?addParents=${to}&removeParents=${from}&fields=${FIELDS}`, { method:'PATCH', json:{} });
+const setFolderColor = (id, c) => drive(`files/${id}?fields=${FIELDS}`, { method:'PATCH', json:{ folderColorRgb:c } });
+async function shareLink(id){ await drive(`files/${id}/permissions`, { method:'POST', json:{ role:'reader', type:'anyone' } }); const f = await drive(`files/${id}?fields=webViewLink`); return f.webViewLink; }
+async function unshare(id){ const p = await drive(`files/${id}/permissions?fields=permissions(id,type)`); for (const x of (p.permissions||[])) if (x.type==='anyone') await drive(`files/${id}/permissions/${x.id}`, { method:'DELETE' }); }
+async function quota(){ const a = await drive('about?fields=storageQuota'); return a.storageQuota; }
+async function fetchBlob(url){ const t = await ensureToken(); const r = await fetch(url, { headers:{ Authorization:'Bearer '+t.access_token } }); if(!r.ok) throw new Error('blob'); return r.blob(); }
+async function thumb(f){
+  if (S.thumbs.has(f.id)) return S.thumbs.get(f.id);
+  if (!f.thumbnailLink) return null;
+  const p = fetchBlob(f.thumbnailLink.replace(/=s\d+/,'=s400')).then(b => URL.createObjectURL(b)).catch(()=>null);
+  S.thumbs.set(f.id, p); return p;
+}
+
+/* ===================== UPLOAD QUEUE (IndexedDB) ===================== */
+const IDB = { db:null,
+  open(){ return new Promise((res,rej)=>{ if(this.db) return res(this.db); const r = indexedDB.open('khazna',1); r.onupgradeneeded = e => e.target.result.createObjectStore('queue',{keyPath:'id'}); r.onsuccess = e => { this.db=e.target.result; res(this.db); }; r.onerror = () => rej(r.error); }); },
+  async all(){ const d=await this.open(); return new Promise(res=>{ const r=d.transaction('queue').objectStore('queue').getAll(); r.onsuccess=()=>res(r.result||[]); }); },
+  async put(it){ const d=await this.open(); return new Promise(res=>{ const t=d.transaction('queue','readwrite'); t.objectStore('queue').put(it); t.oncomplete=res; }); },
+  async del(id){ const d=await this.open(); return new Promise(res=>{ const t=d.transaction('queue','readwrite'); t.objectStore('queue').delete(id); t.oncomplete=res; }); }
+};
+let QUEUE = [], uploading = false;
+async function loadQueue(){ try { QUEUE = (await IDB.all()).filter(x => x.email===S.email); } catch { QUEUE=[]; } renderQueue(); }
+async function enqueue(files, folder){
+  let n = 0;
+  for (const file of files) {
+    let blob = file, name = file.name || 'file';
+    if (file.type.startsWith('image/') && S.settings.compress!=='original') { try { blob = await compressImage(file, S.settings.compress==='small'?1024:1600); name = name.replace(/\.(heic|heif|png|webp)$/i,'.jpg'); } catch{} }
+    if (S.settings.autoName || !file.name || /^image\.(jpe?g|png)$/i.test(file.name)) { const d=new Date(); const ext = (name.split('.').pop()||'jpg').toLowerCase(); name = `${d.toISOString().slice(0,10)}_${folder.name}_${String(++n + QUEUE.length).padStart(2,'0')}.${ext}`; }
+    const it = { id: Date.now()+'_'+Math.random().toString(36).slice(2), email:S.email, name, type: blob.type||file.type||'application/octet-stream', size: blob.size, blob, folderId: folder.id, folderName: folder.name, status:'queued', progress:0, created: Date.now() };
+    QUEUE.push(it); try { await IDB.put(it); } catch{}
+  }
+  renderQueue(); processQueue();
+}
+function compressImage(file, max){ return new Promise((res,rej)=>{ const img=new Image(); const u=URL.createObjectURL(file); img.onload=()=>{ URL.revokeObjectURL(u); let w=img.width,h=img.height; if(Math.max(w,h)<=max && file.size<1.5e6) return res(file); const k=Math.min(1,max/Math.max(w,h)); const c=document.createElement('canvas'); c.width=Math.round(w*k); c.height=Math.round(h*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); c.toBlob(b=>b?res(b):rej(),'image/jpeg',0.86); }; img.onerror=()=>{URL.revokeObjectURL(u);rej();}; img.src=u; }); }
+async function processQueue(){
+  if (uploading || !navigator.onLine) return;
+  const next = QUEUE.find(x => x.status==='queued' || x.status==='error');
+  if (!next) { if (QUEUE.length && QUEUE.every(x=>x.status==='done')) { setTimeout(async()=>{ for (const x of QUEUE) if (x.status==='done') { try{await IDB.del(x.id);}catch{} } QUEUE = QUEUE.filter(x=>x.status!=='done'); renderQueue(); }, 1500); } return; }
+  uploading = true; next.status='uploading'; next.error=''; renderQueue();
+  try {
+    let tok; try { tok = await ensureToken(false); } catch { uploading=false; next.status='queued'; renderQueue(); ensureToken(true).catch(()=>{}); return; }
+    const f = await uploadFile(next, tok.access_token, p => { next.progress=p; renderQueue(true); });
+    next.status='done'; next.progress=100; try{ await IDB.del(next.id); }catch{}
+    bumpUploads(); toast('تم رفع '+next.name);
+    if (S.currentFolder && S.currentFolder.id===next.folderId && document.getElementById('s-folder').classList.contains('on')) { S.files.unshift(f); renderFiles($('folderFiles'), S.files, S.view.files); }
+    S.recent.unshift(f); S.recent = S.recent.slice(0,12); renderFiles($('homeRecent'), S.recent, 'list');
+  } catch (e) { next.status='error'; next.error = e.message||'فشل الرفع'; try{ await IDB.put(next); }catch{} }
+  uploading = false; renderQueue(); processQueue();
+}
+function uploadFile(it, token, onp){
+  if (DEMO) return demoUpload(it, onp);
+  return new Promise(async (res, rej) => {
+    const meta = { name: it.name, parents:[it.folderId] };
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onp(Math.round(e.loaded/e.total*100)); };
+    xhr.onerror = () => rej(new Error('انقطع الاتصال'));
+    xhr.onload = () => { if (xhr.status>=200 && xhr.status<300) res(JSON.parse(xhr.responseText)); else if (xhr.status===401) { localStorage.removeItem(tokenKey(S.email)); rej(new Error('انتهت صلاحية الإذن')); } else rej(new Error('HTTP '+xhr.status)); };
+    if (it.size <= 5*1024*1024) {
+      const fd = new FormData(); fd.append('metadata', new Blob([JSON.stringify(meta)],{type:'application/json'})); fd.append('file', it.blob, it.name);
+      xhr.open('POST', UPLOAD+'?uploadType=multipart&fields='+FIELDS); xhr.setRequestHeader('Authorization','Bearer '+token); xhr.send(fd);
+    } else {
+      try {
+        const r = await fetch(UPLOAD+'?uploadType=resumable&fields='+FIELDS, { method:'POST', headers:{ Authorization:'Bearer '+token, 'Content-Type':'application/json', 'X-Upload-Content-Type': it.type, 'X-Upload-Content-Length': String(it.size) }, body: JSON.stringify(meta) });
+        if (!r.ok) return rej(new Error('HTTP '+r.status));
+        const loc = r.headers.get('Location'); if (!loc) return rej(new Error('no-session'));
+        xhr.open('PUT', loc); xhr.setRequestHeader('Content-Type', it.type); xhr.send(it.blob);
+      } catch (e) { rej(e); }
+    }
+  });
+}
+function renderQueue(light){
+  const html = QUEUE.length ? QUEUE.map(x => `<div class="up"><div class="row"><span class="grow small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.name)} <span class="muted">← ${esc(x.folderName)}</span></span>${x.status==='done'?'<span class="badge">تم</span>':x.status==='error'?`<span class="badge err">${esc(x.error)}</span><button class="link small" data-retry="${x.id}">إعادة</button>`:x.status==='uploading'?`<span class="badge">${x.progress}%</span>`:`<span class="badge warn">${navigator.onLine?'بالانتظار':'بدون اتصال'}</span>`}<button class="icbtn plain" data-rm="${x.id}" style="width:28px;height:28px"><svg class="i" style="width:16px"><use href="#i-x"/></svg></button></div><div class="bar"><i style="width:${x.progress}%"></i></div></div>`).join('') : '';
+  for (const id of ['uploadPanel','folderUploadPanel']) { const el=$(id); if (el.innerHTML!==html) el.innerHTML = html; }
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => { const x=QUEUE.find(y=>y.id===b.dataset.rm); if (x && x.status==='uploading') return; QUEUE=QUEUE.filter(y=>y.id!==b.dataset.rm); try{await IDB.del(b.dataset.rm);}catch{} renderQueue(); });
+  document.querySelectorAll('[data-retry]').forEach(b => b.onclick = () => { const x=QUEUE.find(y=>y.id===b.dataset.retry); if (x) { x.status='queued'; processQueue(); } });
+}
+window.addEventListener('online', () => { toast('عاد الاتصال — جاري الرفع'); renderQueue(); processQueue(); });
+window.addEventListener('offline', () => { toast('لا يوجد اتصال — ستُرفع الملفات لاحقًا'); renderQueue(); });
+
+/* ===================== FIREBASE (users) ===================== */
+async function loadProfile(){
+  if (DEMO) { S.profile = DEMOD.profile; return S.profile; }
+  const snap = await db.ref('users/'+S.user.uid).get(); S.profile = snap.val() || {};
+  if (!S.profile.email) { S.profile = { email:S.email, name:S.user.displayName||'', status:'active', created: Date.now() }; await db.ref('users/'+S.user.uid).set(S.profile); }
+  return S.profile;
+}
+async function saveProfile(patch){ Object.assign(S.profile, patch); if (!DEMO) await db.ref('users/'+S.user.uid).update(patch); renderIdentity(); }
+async function logLogin(){ if (DEMO) return; try { const uid=S.user.uid; await db.ref('users/'+uid).update({ lastLogin: Date.now() }); const ref = db.ref('activity/'+uid+'/logins'); await ref.push({ t: Date.now(), ua: navigator.userAgent.slice(0,80) }); const s = await ref.orderByKey().get(); const keys=Object.keys(s.val()||{}); if (keys.length>30) { const rm={}; keys.slice(0,keys.length-30).forEach(k=>rm[k]=null); await ref.update(rm); } } catch{} }
+async function bumpUploads(){ if (DEMO) return; try { await db.ref('users/'+S.user.uid+'/uploads').transaction(n => (n||0)+1); await db.ref('users/'+S.user.uid).update({ lastUpload: Date.now() }); } catch{} }
+function accessProblem(p){ if (p.status==='blocked') return 'تم إيقاف هذا الحساب من قبل مدير النظام.'; if (p.expires && new Date(p.expires) < new Date()) return 'انتهت صلاحية الاشتراك بتاريخ '+p.expires+'. تواصل مع مدير النظام.'; return null; }
+
+/* ===================== AUTH FLOWS ===================== */
+async function doLogin(){
+  const email = $('lEmail').value.trim().toLowerCase(), pass = $('lPass').value;
+  $('lErr').textContent=''; if (!email||!pass) return $('lErr').textContent='أدخل البريد وكلمة المرور';
+  $('btnLogin').disabled = true;
+  try {
+    if (email===CONFIG.adminEmail.toLowerCase()) {
+      if (!DEMO) { try { await auth.signInWithEmailAndPassword(email, pass); } catch(e) { if (!(e.code||'').includes('user-not-found') && !(e.code||'').includes('invalid-credential')) throw e; if (pass.length<6) throw {code:'auth/weak-password'}; try { await auth.createUserWithEmailAndPassword(email, pass); } catch(e2) { throw e; } } }
+      else if (pass!=='admin123') throw {code:'auth/wrong-password'};
+      location.href = 'admin.html'; return;
+    }
+    if (DEMO) { if (pass.length<6) throw {code:'auth/wrong-password'}; S.user={uid:'demo',email}; }
+    else { const c = await auth.signInWithEmailAndPassword(email, pass); S.user = c.user; }
+    sessionStorage.setItem('kz_unlocked','1'); localStorage.setItem('kz_last_email', email);
+    await afterLogin();
+  } catch(e) { $('lErr').textContent = authErr(e); }
+  $('btnLogin').disabled = false;
+}
+function authErr(e){ const c=e.code||''; if (c.includes('wrong-password')||c.includes('invalid-credential')||c.includes('invalid-login')) return 'كلمة المرور غير صحيحة'; if (c.includes('user-not-found')) return 'لا يوجد حساب بهذا البريد — سجّل كمستخدم جديد'; if (c.includes('too-many')) return 'محاولات كثيرة، حاول لاحقًا'; if (c.includes('network')) return 'تعذر الاتصال بالإنترنت'; if (c.includes('email-already')) return 'هذا البريد مسجل مسبقًا — سجّل الدخول'; if (c.includes('weak')) return 'كلمة المرور ضعيفة'; if (c.includes('invalid-email')) return 'البريد غير صحيح'; return e.message||'حدث خطأ'; }
+async function afterLogin(){
+  S.email = S.user.email.toLowerCase();
+  await loadProfile();
+  const prob = accessProblem(S.profile);
+  if (prob) { $('blockMsg').textContent = prob; $('blockTitle').textContent = S.profile.status==='blocked'?'الحساب موقوف':'انتهى الاشتراك'; show('s-blocked'); return; }
+  logLogin(); renderIdentity();
+  const t = loadToken(S.email);
+  if (!t) { $('linkErr').textContent=''; showLink(); return; }
+  S.token = t; sessionStorage.removeItem('kz_silent_try');
+  show('s-home'); loadHome(); loadQueue();
+}
+function renderIdentity(){
+  const p = S.profile||{}; const name = p.name || S.email?.split('@')[0] || '';
+  $('homeName').textContent = 'مرحبًا '+name; $('homeEmail').textContent = S.email||''; $('lockName').textContent = name; $('lockEmail').textContent = S.email||''; $('setName').value = p.name||''; $('setEmail').textContent = S.email||'';
+  const img = p.photo ? `<img src="${esc(p.photo)}" alt="">` : `<svg class="i" style="width:56px;height:56px"><use href="#i-user"/></svg>`;
+  for (const id of ['homeAvatar','setAvatar']) $(id).innerHTML = img + '<span class="edit"><svg class="i" style="width:16px;height:16px"><use href="#i-camera"/></svg></span>';
+  $('lockAvatar').innerHTML = img;
+}
+async function doRegister(){
+  const p1=$('rPass').value, p2=$('rPass2').value, name=$('rName').value.trim(); $('rErr2').textContent='';
+  if (p1.length<6) return $('rErr2').textContent='كلمة المرور 6 أحرف على الأقل'; if (p1!==p2) return $('rErr2').textContent='كلمتا المرور غير متطابقتين';
+  const pend = S.pending; if (!pend) return $('rErr2').textContent='اربط حساب Google أولًا';
+  $('btnRegister').disabled=true;
+  try {
+    if (DEMO) S.user={uid:'demo',email:pend.email};
+    else { const c = await auth.createUserWithEmailAndPassword(pend.email, p1); S.user=c.user; await db.ref('users/'+S.user.uid).set({ email:pend.email, name: name||pend.name||'', photo: pend.picture||'', status:'active', created: Date.now(), uploads:0 }); }
+    saveToken(pend.email, pend.tok); sessionStorage.setItem('kz_unlocked','1'); localStorage.setItem('kz_last_email', pend.email); S.pending=null; sessionStorage.removeItem('kz_pending');
+    await afterLogin();
+  } catch(e){ $('rErr2').textContent = authErr(e); }
+  $('btnRegister').disabled=false;
+}
+async function doUnlock(){
+  const pass=$('kPass').value; $('kErr').textContent=''; if (!pass) return;
+  $('btnUnlock').disabled=true;
+  try { if (!DEMO) await auth.signInWithEmailAndPassword(S.user.email, pass); sessionStorage.setItem('kz_unlocked','1'); $('kPass').value=''; await afterLogin(); }
+  catch(e){ $('kErr').textContent = authErr(e); }
+  $('btnUnlock').disabled=false;
+}
+async function doLogout(){ sessionStorage.removeItem('kz_unlocked'); if (!DEMO) await auth.signOut(); S.user=null; S.profile=null; S.token=null; S.rootId=null; S.folders=[]; show('s-login'); }
+/* biometric (WebAuthn, local only) */
+const bioAvailable = () => !!(window.PublicKeyCredential && navigator.credentials);
+async function bioEnroll(){
+  const uidBytes = new TextEncoder().encode(S.user.uid);
+  const cred = await navigator.credentials.create({ publicKey:{ challenge: crypto.getRandomValues(new Uint8Array(32)), rp:{ name:'خزنة', id: location.hostname }, user:{ id: uidBytes, name:S.email, displayName:S.profile?.name||S.email }, pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}], authenticatorSelection:{ authenticatorAttachment:'platform', userVerification:'required', residentKey:'preferred' }, timeout:60000 } });
+  localStorage.setItem('kz_bio_'+S.email, btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+}
+async function bioVerify(){
+  const raw = localStorage.getItem('kz_bio_'+S.email); if (!raw) throw new Error('no-bio');
+  const id = Uint8Array.from(atob(raw), c=>c.charCodeAt(0));
+  await navigator.credentials.get({ publicKey:{ challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: location.hostname, allowCredentials:[{ type:'public-key', id }], userVerification:'required', timeout:60000 } });
+  return true;
+}
+
+/* ===================== HOME / FOLDERS / FILES ===================== */
+function folderColor(f){ return f.folderColorRgb || '#4986e7'; }
+function folderCard(f){ return `<button class="folder" data-open="${f.id}"><span class="fi" style="background:${esc(folderColor(f))}"><svg class="i"><use href="#i-folder"/></svg></span><span class="grow" style="overflow:hidden"><b>${esc(f.name)}</b><small>${fmtDate(f.modifiedTime)}</small></span><span class="more" data-fmore="${f.id}"><svg class="i" style="width:18px"><use href="#i-more"/></svg></span></button>`; }
+function bindFolders(el){
+  el.querySelectorAll('[data-open]').forEach(b => b.onclick = e => { if (e.target.closest('[data-fmore]')) return; openFolder(b.dataset.open); });
+  el.querySelectorAll('[data-fmore]').forEach(b => b.onclick = e => { e.stopPropagation(); folderMenu(S.folders.find(f=>f.id===b.dataset.fmore)); });
+}
+async function loadHome(){
+  if (!S.email) return;
+  try {
+    const cached = localStorage.getItem('kz_folders_'+S.email); if (cached && !S.folders.length) { S.folders = JSON.parse(cached); renderHomeFolders(); }
+    quota().then(qt => { const u=+qt.usage||0, l=+qt.limit||0; $('quotaTxt').textContent = l? `${fmtSize(u)} من ${fmtSize(l)}` : fmtSize(u); $('quotaBar').style.width = l? Math.min(100, u/l*100)+'%' : '0%'; }).catch(()=>{});
+    await listFolders(); renderHomeFolders();
+    S.recent = await listRecent(); renderFiles($('homeRecent'), S.recent, 'list');
+  } catch(e){ if (e.message!=='redirecting' && e.message!=='auth') toast('تعذر التحميل: '+e.message); }
+}
+function renderHomeFolders(){ const el=$('homeFolders'); el.innerHTML = S.folders.length ? S.folders.slice(0,6).map(folderCard).join('') : `<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-folderplus"/></svg><br>لا توجد مجلدات بعد — أنشئ مجلدك الأول</div>`; bindFolders(el); }
+function renderAllFolders(){ const el=$('allFolders'); el.className='folders '+(S.view.folders==='list'?'list':''); el.innerHTML = S.folders.length ? S.folders.map(folderCard).join('') : `<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-folderplus"/></svg><br>لا توجد مجلدات بعد</div>`; bindFolders(el); }
+async function newFolderDialog(){
+  let color = PALETTE[S.folders.length%PALETTE.length];
+  sheet(`<h2>مجلد جديد</h2><div class="field"><input id="nfName" dir="rtl" placeholder="اسم المجلد (مثال: فواتير، أوراق العمل…)"></div><div class="muted small">اللون</div><div class="colors" id="nfColors">${PALETTE.map(c=>`<b style="background:${c}" data-c="${c}" class="${c===color?'sel':''}"></b>`).join('')}</div><button class="btn" id="nfOk">إنشاء</button>`);
+  setTimeout(()=>$('nfName').focus(),100);
+  $('nfColors').querySelectorAll('b').forEach(b => b.onclick = () => { color=b.dataset.c; $('nfColors').querySelectorAll('b').forEach(x=>x.classList.toggle('sel',x===b)); });
+  $('nfOk').onclick = async () => { const name=$('nfName').value.trim(); if(!name) return; if (S.folders.some(f=>f.name===name)) return toast('يوجد مجلد بهذا الاسم'); $('nfOk').disabled=true; try { const f = await createFolder(name, color); closeSheet(); toast('تم إنشاء '+name); renderHomeFolders(); renderAllFolders(); return f; } catch(e){ toast('فشل: '+e.message); $('nfOk').disabled=false; } };
+}
+function folderMenu(f){
+  if (!f) return;
+  sheet(`<div class="row" style="margin-bottom:8px"><span class="fi" style="width:40px;height:40px;border-radius:12px;background:${esc(folderColor(f))};display:flex;align-items:center;justify-content:center;color:#fff"><svg class="i"><use href="#i-folder"/></svg></span><b class="grow">${esc(f.name)}</b></div>
+  <button class="opt" id="fmOpen"><span class="ic"><svg class="i"><use href="#i-folder"/></svg></span>فتح</button>
+  <button class="opt" id="fmUp"><span class="ic"><svg class="i"><use href="#i-plus"/></svg></span>رفع إلى هذا المجلد</button>
+  <button class="opt" id="fmRename"><span class="ic"><svg class="i"><use href="#i-edit"/></svg></span>إعادة تسمية</button>
+  <div class="colors" style="padding:0 8px">${PALETTE.map(c=>`<b style="background:${c}" data-c="${c}" class="${c===folderColor(f)?'sel':''}"></b>`).join('')}</div>
+  <button class="opt" id="fmDrive"><span class="ic"><svg class="i"><use href="#i-open"/></svg></span>فتح في Google Drive</button>
+  <button class="opt danger" id="fmDel"><span class="ic"><svg class="i"><use href="#i-trash"/></svg></span>حذف المجلد (إلى سلة المحذوفات)</button>`);
+  $('fmOpen').onclick=()=>{closeSheet();openFolder(f.id)};
+  $('fmUp').onclick=()=>{closeSheet();pickSource(f)};
+  $('fmRename').onclick=async()=>{ closeSheet(); const n=await prompt2('اسم المجلد', f.name); if(!n||n===f.name) return; try{ const nf=await renameFile(f.id,n); Object.assign(f,nf); renderHomeFolders(); renderAllFolders(); toast('تمت إعادة التسمية'); }catch(e){toast('فشل: '+e.message);} };
+  $('sheet').querySelectorAll('.colors b').forEach(b=>b.onclick=async()=>{ try{ const nf=await setFolderColor(f.id,b.dataset.c); Object.assign(f,nf); closeSheet(); renderHomeFolders(); renderAllFolders(); }catch(e){toast('فشل: '+e.message);} });
+  $('fmDrive').onclick=()=>{ closeSheet(); window.open(f.webViewLink||('https://drive.google.com/drive/folders/'+f.id),'_blank'); };
+  $('fmDel').onclick=async()=>{ closeSheet(); if(!await confirm2('حذف المجلد','سيُنقل المجلد وكل ما فيه إلى سلة محذوفات Google Drive ويمكن استرجاعه من هناك خلال 30 يومًا.','حذف')) return; try{ await trashFile(f.id); S.folders=S.folders.filter(x=>x.id!==f.id); localStorage.setItem('kz_folders_'+S.email, JSON.stringify(S.folders)); renderHomeFolders(); renderAllFolders(); toast('تم الحذف'); }catch(e){toast('فشل: '+e.message);} };
+}
+async function openFolder(id){
+  const f = S.folders.find(x=>x.id===id); if (!f) return;
+  S.currentFolder = f; $('folderTitle').textContent = f.name; show('s-folder');
+  const el=$('folderFiles'); el.innerHTML='<div class="spinner" style="grid-column:1/-1"></div>';
+  try { S.files = await listFiles(id); renderFiles(el, S.files, S.view.files); } catch(e){ el.innerHTML=`<div class="empty" style="grid-column:1/-1">${esc(e.message)}</div>`; }
+}
+function renderFiles(el, files, view){
+  el.className = 'files '+(view==='list'?'list':'');
+  if (!files.length) { el.innerHTML = `<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-image"/></svg><br>لا توجد ملفات هنا بعد</div>`; return; }
+  el.innerHTML = files.map(f => `<button class="file" data-file="${f.id}"><span class="th" id="th_${f.id}"><svg class="i"><use href="#${fileIcon(f.mimeType)}"/></svg></span><span class="nm">${esc(f.name)}</span><span class="dt">${fmtDate(f.modifiedTime)}${f.size?' · '+fmtSize(f.size):''}${f.shared?' · مشارك':''}</span></button>`).join('');
+  el.querySelectorAll('[data-file]').forEach(b => b.onclick = () => fileMenu(files.find(x=>x.id===b.dataset.file)));
+  files.slice(0,60).forEach(async f => { if (!f.thumbnailLink) return; const u = await thumb(f); const t=document.getElementById('th_'+f.id); if (u && t) t.innerHTML = `<img src="${u}" alt="">`; });
+}
+function fileMenu(f){
+  if (!f) return;
+  const isImg = (f.mimeType||'').startsWith('image/');
+  sheet(`<div class="row" style="margin-bottom:8px"><span class="th" style="width:48px;height:48px;border-radius:12px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);overflow:hidden" id="mth"><svg class="i"><use href="#${fileIcon(f.mimeType)}"/></svg></span><span class="grow" style="overflow:hidden"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</b><small class="muted">${fmtDate(f.modifiedTime)}${f.size?' · '+fmtSize(f.size):''}</small></span></div>
+  <button class="opt" id="fOpen"><span class="ic"><svg class="i"><use href="#i-open"/></svg></span>فتح / معاينة</button>
+  <button class="opt" id="fShareFile"><span class="ic"><svg class="i"><use href="#i-share"/></svg></span>مشاركة الملف (واتساب وغيره)</button>
+  <button class="opt" id="fShareLink"><span class="ic"><svg class="i"><use href="#i-link"/></svg></span>مشاركة رابط Drive</button>
+  ${f.shared?'<button class="opt" id="fUnshare"><span class="ic"><svg class="i"><use href="#i-x"/></svg></span>إيقاف مشاركة الرابط</button>':''}
+  <button class="opt" id="fDownload"><span class="ic"><svg class="i"><use href="#i-download"/></svg></span>تنزيل إلى الجهاز</button>
+  <button class="opt" id="fRename"><span class="ic"><svg class="i"><use href="#i-edit"/></svg></span>إعادة تسمية</button>
+  <button class="opt" id="fMove"><span class="ic"><svg class="i"><use href="#i-move"/></svg></span>نقل إلى مجلد آخر</button>
+  <button class="opt danger" id="fDel"><span class="ic"><svg class="i"><use href="#i-trash"/></svg></span>حذف</button>`);
+  thumb(f).then(u => { if (u && $('mth')) $('mth').innerHTML=`<img src="${u}" style="width:100%;height:100%;object-fit:cover">`; });
+  $('fOpen').onclick=()=>{ closeSheet(); window.open(f.webViewLink,'_blank'); };
+  $('fShareFile').onclick=async()=>{ closeSheet(); try{ toast('جاري التحضير…'); const b = await fetchBlob(`${DRIVE}files/${f.id}?alt=media`); const file = new File([b], f.name, {type:f.mimeType}); if (navigator.canShare && navigator.canShare({files:[file]})) await navigator.share({ files:[file], title:f.name }); else { const u=URL.createObjectURL(b); window.open(u,'_blank'); } }catch(e){ if(e.name!=='AbortError') toast('تعذرت المشاركة: '+e.message); } };
+  $('fShareLink').onclick=async()=>{ closeSheet(); try{ const url = await shareLink(f.id); f.shared=true; if (navigator.share) await navigator.share({ title:f.name, url }); else { await navigator.clipboard.writeText(url); toast('تم نسخ الرابط'); } }catch(e){ if(e.name!=='AbortError') toast('فشل: '+e.message); } };
+  if ($('fUnshare')) $('fUnshare').onclick=async()=>{ closeSheet(); try{ await unshare(f.id); f.shared=false; toast('تم إيقاف المشاركة'); }catch(e){toast('فشل: '+e.message);} };
+  $('fDownload').onclick=async()=>{ closeSheet(); try{ toast('جاري التنزيل…'); const b = await fetchBlob(`${DRIVE}files/${f.id}?alt=media`); const file = new File([b], f.name, {type:f.mimeType}); if (navigator.canShare && navigator.canShare({files:[file]}) && /iPhone|iPad|Android/.test(navigator.userAgent)) await navigator.share({ files:[file], title:f.name }); else { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=f.name; a.click(); } }catch(e){ if(e.name!=='AbortError') toast('فشل: '+e.message); } };
+  $('fRename').onclick=async()=>{ closeSheet(); const n=await prompt2('اسم الملف', f.name); if(!n||n===f.name) return; try{ const nf=await renameFile(f.id,n); Object.assign(f,nf); refreshLists(); toast('تمت إعادة التسمية'); }catch(e){toast('فشل: '+e.message);} };
+  $('fMove').onclick=()=>{ closeSheet(); pickFolder('نقل إلى', async dest => { if (dest.id===(f.parents||[])[0]) return; try{ const nf=await moveFile(f.id,(f.parents||[])[0],dest.id); Object.assign(f,nf); S.files=S.files.filter(x=>x.id!==f.id); refreshLists(); toast('تم النقل إلى '+dest.name); }catch(e){toast('فشل: '+e.message);} }); };
+  $('fDel').onclick=async()=>{ closeSheet(); if(!await confirm2('حذف الملف','سيُنقل إلى سلة محذوفات Google Drive ويمكن استرجاعه خلال 30 يومًا.','حذف')) return; try{ await trashFile(f.id); S.files=S.files.filter(x=>x.id!==f.id); S.recent=S.recent.filter(x=>x.id!==f.id); refreshLists(); toast('تم الحذف'); }catch(e){toast('فشل: '+e.message);} };
+}
+function refreshLists(){ if (S.currentFolder) renderFiles($('folderFiles'), S.files, S.view.files); renderFiles($('homeRecent'), S.recent, 'list'); }
+function pickFolder(title, cb, allowNew=true){
+  const render = () => {
+    sheet(`<h2>${title}</h2><div class="muted small" style="margin-bottom:6px">اختر المجلد</div><div id="pkList">${S.folders.map(f=>`<button class="pick" data-pk="${f.id}"><span class="fi" style="background:${esc(folderColor(f))}"><svg class="i"><use href="#i-folder"/></svg></span><span class="grow">${esc(f.name)}</span></button>`).join('')||'<div class="empty">لا توجد مجلدات — أنشئ مجلدًا أولًا</div>'}</div>${allowNew?'<button class="btn ghost" id="pkNew" style="margin-top:12px"><svg class="i"><use href="#i-folderplus"/></svg> مجلد جديد</button>':''}`);
+    $('sheet').querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { closeSheet(); const f=S.folders.find(x=>x.id===b.dataset.pk); localStorage.setItem('kz_lastfolder_'+S.email, f.id); cb(f); });
+    if (allowNew) $('pkNew').onclick = async () => { const f = await newFolderDialogPromise(); if (f) { localStorage.setItem('kz_lastfolder_'+S.email, f.id); cb(f); } else render(); };
+  };
+  render();
+}
+function newFolderDialogPromise(){ return new Promise(res => { newFolderDialog(); const ok=$('nfOk'); const orig=ok.onclick; ok.onclick=async()=>{ const f = await orig(); res(f||null); }; $('ov').addEventListener('click', function h(e){ if(e.target===$('ov')){ $('ov').removeEventListener('click',h); res(null);} }); }); }
+/* source pickers */
+let pendingFolder = null;
+function pickSource(folder){
+  pendingFolder = folder;
+  sheet(`<h2>رفع إلى «${esc(folder.name)}»</h2>
+  <button class="opt" id="srcCam"><span class="ic"><svg class="i"><use href="#i-camera"/></svg></span>تصوير بالكاميرا</button>
+  <button class="opt" id="srcGal"><span class="ic"><svg class="i"><use href="#i-image"/></svg></span>من الصور والفيديو</button>
+  <button class="opt" id="srcFile"><span class="ic"><svg class="i"><use href="#i-file"/></svg></span>من الملفات</button>
+  <button class="opt" id="srcNote"><span class="ic"><svg class="i"><use href="#i-edit"/></svg></span>ملاحظة نصية</button>`);
+  $('srcCam').onclick=()=>{closeSheet();$('inCam').click();}; $('srcGal').onclick=()=>{closeSheet();$('inGal').click();}; $('srcFile').onclick=()=>{closeSheet();$('inFile').click();};
+  $('srcNote').onclick=async()=>{ closeSheet(); const t=await noteDialog(); if(!t) return; const d=new Date(); const name=`ملاحظة_${d.toISOString().slice(0,10)}_${d.toTimeString().slice(0,5).replace(':','')}.txt`; enqueue([new File([t], name, {type:'text/plain'})], folder); };
+}
+function noteDialog(){ return new Promise(res=>{ sheet(`<h2>ملاحظة نصية</h2><div class="field"><textarea id="ntIn" rows="6" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:14px;font:inherit;background:var(--card);color:var(--text)" placeholder="اكتب الملاحظة…"></textarea></div><button class="btn" id="ntOk">حفظ في المجلد</button>`); $('ntOk').onclick=()=>{const v=$('ntIn').value.trim(); closeSheet(); res(v);}; }); }
+async function preUpload(inputId){
+  // refresh token proactively before opening the picker (redirect would lose the selection)
+  try { await ensureToken(true); } catch { return; }
+  $(inputId).value=''; $(inputId).click();
+}
+function handleFiles(input){
+  const files = Array.from(input.files||[]); if (!files.length) return;
+  if (pendingFolder) { const f=pendingFolder; pendingFolder=null; enqueue(files, f); return; }
+  if (S.currentFolder && $('s-folder').classList.contains('on')) { enqueue(files, S.currentFolder); return; }
+  pickFolder(`حفظ ${files.length>1?files.length+' ملفات':'الملف'} في`, f => enqueue(files, f));
+}
+['inCam','inGal','inFile'].forEach(id => $(id).addEventListener('change', () => handleFiles($(id))));
+$('aCam').onclick=()=>preUpload('inCam'); $('aGal').onclick=()=>preUpload('inGal'); $('aFile').onclick=()=>preUpload('inFile');
+$('aNewFolder').onclick=newFolderDialog; $('btnFoldersNew').onclick=newFolderDialog; $('btnAllFolders').onclick=()=>go('s-folders');
+$('fabUpload').onclick=()=>pickSource(S.currentFolder);
+$('btnFolderMore').onclick=()=>folderMenu(S.currentFolder);
+$('btnFolderView').onclick=()=>{ S.view.files = S.view.files==='list'?'grid':'list'; renderFiles($('folderFiles'), S.files, S.view.files); };
+$('btnFoldersView').onclick=()=>{ S.view.folders = S.view.folders==='list'?'grid':'list'; renderAllFolders(); };
+$('btnHomeSearch').onclick=()=>go('s-search'); $('btnHomeSettings').onclick=()=>go('s-settings');
+/* avatar */
+for (const id of ['homeAvatar','setAvatar']) $(id).onclick=()=>$('inAvatar').click();
+$('inAvatar').addEventListener('change', async () => { const f=$('inAvatar').files[0]; if(!f) return; try{ const b = await compressImage(f, 256); const r=new FileReader(); r.onload=async()=>{ await saveProfile({ photo:r.result }); toast('تم تحديث الصورة'); }; r.readAsDataURL(b); }catch{ toast('تعذر تحميل الصورة'); } $('inAvatar').value=''; });
+/* search */
+let qT; $('qIn').addEventListener('input', () => { clearTimeout(qT); $('qClear').classList.toggle('hidden', !$('qIn').value); qT=setTimeout(runSearch, 450); });
+$('qClear').onclick=()=>{ $('qIn').value=''; $('qClear').classList.add('hidden'); runSearch(); };
+document.querySelectorAll('[data-ft]').forEach(c => c.onclick = () => { document.querySelectorAll('[data-ft]').forEach(x=>x.classList.toggle('on',x===c)); S.ft=c.dataset.ft; runSearch(); });
+async function runSearch(){
+  const text=$('qIn').value.trim(); const el=$('qRes');
+  if (!text && !S.ft) { el.innerHTML=`<div class="empty"><svg class="i"><use href="#i-search"/></svg><br>اكتب كلمة للبحث في كل ملفاتك</div>`; return; }
+  el.innerHTML='<div class="spinner"></div>';
+  try { const files = await searchFiles(text, S.ft); renderFiles(el, files, 'list'); if (files.length) { const map=Object.fromEntries(S.folders.map(f=>[f.id,f.name])); el.querySelectorAll('[data-file]').forEach(b=>{ const f=files.find(x=>x.id===b.dataset.file); const p=map[(f.parents||[])[0]]; if(p) b.querySelector('.dt').textContent = p+' · '+fmtDate(f.modifiedTime); }); } }
+  catch(e){ el.innerHTML=`<div class="empty">${esc(e.message)}</div>`; }
+}
+/* settings */
+function renderSettings(){
+  document.querySelectorAll('#compChips .chip').forEach(c => c.classList.toggle('on', c.dataset.c===S.settings.compress));
+  $('swAutoName').classList.toggle('on', !!S.settings.autoName); $('swBio').classList.toggle('on', !!S.settings.bio && !!localStorage.getItem('kz_bio_'+S.email)); $('swRemember').classList.toggle('on', !!S.settings.remember);
+  $('setLinkBadge').textContent = loadToken(S.email)?'مرتبط':'يحتاج إعادة ربط'; $('setLinkBadge').className='badge '+(loadToken(S.email)?'':'warn');
+}
+document.querySelectorAll('#compChips .chip').forEach(c => c.onclick=()=>{ S.settings.compress=c.dataset.c; settingsSave(); renderSettings(); });
+$('swAutoName').onclick=()=>{ S.settings.autoName=!S.settings.autoName; settingsSave(); renderSettings(); };
+$('swRemember').onclick=()=>{ S.settings.remember=!S.settings.remember; settingsSave(); renderSettings(); };
+$('swBio').onclick=async()=>{ if (S.settings.bio && localStorage.getItem('kz_bio_'+S.email)) { S.settings.bio=false; localStorage.removeItem('kz_bio_'+S.email); } else { if(!bioAvailable()) return toast('البصمة غير متاحة على هذا المتصفح'); try{ await bioEnroll(); S.settings.bio=true; toast('تم تفعيل البصمة'); }catch(e){ toast('لم يتم التفعيل'); } } settingsSave(); renderSettings(); };
+$('btnSaveName').onclick=async()=>{ await saveProfile({ name:$('setName').value.trim() }); toast('تم الحفظ'); };
+$('btnChangePass').onclick=()=>{ sheet(`<h2>تغيير كلمة المرور</h2><div class="field"><label>الحالية</label><input type="password" id="cp0"></div><div class="field"><label>الجديدة</label><input type="password" id="cp1"></div><div class="field"><label>تأكيد الجديدة</label><input type="password" id="cp2"></div><div class="err" id="cpErr"></div><button class="btn" id="cpOk">حفظ</button>`);
+  $('cpOk').onclick=async()=>{ const a=$('cp0').value,b=$('cp1').value,c=$('cp2').value; if(b.length<6) return $('cpErr').textContent='6 أحرف على الأقل'; if(b!==c) return $('cpErr').textContent='غير متطابقتين'; try{ if(!DEMO){ const cred=firebase.auth.EmailAuthProvider.credential(S.user.email,a); await S.user.reauthenticateWithCredential(cred); await S.user.updatePassword(b);} closeSheet(); toast('تم تغيير كلمة المرور'); }catch(e){ $('cpErr').textContent=authErr(e); } }; };
+$('btnOpenDrive').onclick=()=>window.open(S.rootId?('https://drive.google.com/drive/folders/'+S.rootId):'https://drive.google.com','_blank');
+$('btnRelinkSet').onclick=()=>googleAuth({a:'reauth'}, S.email, 'select_account');
+$('btnRelink').onclick=()=>googleAuth({a:'reauth'}, S.email, 'select_account');
+$('btnLogout').onclick=doLogout; $('btnLinkLogout').onclick=doLogout; $('btnLockLogout').onclick=doLogout; $('btnBlockLogout').onclick=doLogout;
+/* auth buttons */
+$('btnLogin').onclick=doLogin; $('lPass').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
+$('btnGoReg').onclick=()=>{ $('regStep1').classList.remove('hidden'); $('regStep2').classList.add('hidden'); $('st2').classList.remove('on'); show('s-register'); };
+$('btnLinkGoogle').onclick=()=>googleAuth({a:'link'}, '', 'select_account');
+$('btnRegister').onclick=doRegister; $('btnUnlock').onclick=doUnlock; $('kPass').onkeydown=e=>{ if(e.key==='Enter') doUnlock(); };
+$('btnBio').onclick=async()=>{ try{ await bioVerify(); sessionStorage.setItem('kz_unlocked','1'); await afterLogin(); }catch{ toast('لم يتم التحقق'); } };
+$('btnForgot').onclick=async()=>{ const email=$('lEmail').value.trim(); if(!email) return $('lErr').textContent='اكتب بريدك أولًا'; try{ if(!DEMO) await auth.sendPasswordResetEmail(email); toast('أرسلنا رابط إعادة التعيين إلى بريدك',3500); }catch(e){ $('lErr').textContent=authErr(e); } };
+function showRegisterStep2(pend){ S.pending = pend; $('rEmail').value=pend.email; $('rName').value=pend.name||''; $('regStep1').classList.add('hidden'); $('regStep2').classList.remove('hidden'); $('st2').classList.add('on'); show('s-register'); }
+
+/* ===================== BOOT ===================== */
+async function boot(){
+  const ret = await handleOAuthReturn();
+  const lastEmail = localStorage.getItem('kz_last_email')||''; $('lEmail').value = lastEmail;
+  const start = async (user) => {
+    if (ret && ret.tok) {
+      if (ret.st.a==='link') { showRegisterStep2({ email:ret.tok.email, name:ret.tok.name, picture:ret.tok.picture, tok:ret.tok }); return; }
+      if (user) {
+        if (ret.tok.email !== user.email.toLowerCase()) { S.user=user; S.email=user.email.toLowerCase(); await loadProfile(); renderIdentity(); showLink(`اخترت حساب ${ret.tok.email} بينما حسابك المسجل هو ${S.email}. اختر الحساب الصحيح.`); return; }
+        saveToken(ret.tok.email, ret.tok); sessionStorage.removeItem('kz_silent_try');
+      }
+    } else if (ret && ret.error && user) {
+      S.user=user; S.email=user.email.toLowerCase(); await loadProfile(); renderIdentity();
+      if (ret.st.a==='reauth' && ['interaction_required','login_required','consent_required'].includes(ret.error) && !sessionStorage.getItem('kz_reauth2')) { sessionStorage.setItem('kz_reauth2','1'); googleAuth({a:'reauth'}, S.email, 'select_account'); return; }
+      showLink('لم يكتمل ربط Google: '+ret.error); return;
+    }
+    if (!user) { show('s-login'); return; }
+    S.user = user; S.email = user.email.toLowerCase();
+    if (S.email===CONFIG.adminEmail.toLowerCase()) { location.href='admin.html'; return; }
+    if (sessionStorage.getItem('kz_unlocked') || S.settings.remember) { await afterLogin(); return; }
+    await loadProfile(); renderIdentity();
+    $('btnBio').classList.toggle('hidden', !(S.settings.bio && localStorage.getItem('kz_bio_'+S.email)));
+    show('s-lock');
+    if (S.settings.bio && localStorage.getItem('kz_bio_'+S.email)) $('btnBio').click();
+  };
+  if (DEMO) { const u = sessionStorage.getItem('kz_demo_user'); await start(u ? {uid:'demo', email:u} : null); return; }
+  auth.onAuthStateChanged(u => { if (!boot.done) { boot.done=true; start(u).catch(e=>{ console.error(e); show('s-login'); }); } });
+}
+if ('serviceWorker' in navigator && !DEMO) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* ===================== DEMO MODE (preview only) ===================== */
+const DEMOD = { profile:{ email:'demo@gmail.com', name:'فيصل', status:'active', photo:'' } };
+function demoOAuthReturn(state){ const tok={ access_token:'demo', expires_at:Date.now()+3.6e6, email: S.email||'demo@gmail.com', name:'فيصل', picture:'' }; if (state.a==='link') showRegisterStep2({ email:'demo@gmail.com', name:'فيصل', picture:'', tok }); else { saveToken(S.email,tok); afterLogin(); } }
+if (DEMO) {
+  const svgTh = (c,t) => 'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="${c}"/><text x="100" y="115" font-size="60" text-anchor="middle" fill="#fff" font-family="sans-serif">${t}</text></svg>`);
+  const D = { folders:[ {id:'f1',name:'فواتير',mimeType:FOLDER_MIME,folderColorRgb:'#fb4c2f',modifiedTime:'2026-08-30T10:00:00Z'}, {id:'f2',name:'أوراق العمل',mimeType:FOLDER_MIME,folderColorRgb:'#4986e7',modifiedTime:'2026-08-28T10:00:00Z'}, {id:'f3',name:'صور العائلة',mimeType:FOLDER_MIME,folderColorRgb:'#16a765',modifiedTime:'2026-08-20T10:00:00Z'}, {id:'f4',name:'شهادات',mimeType:FOLDER_MIME,folderColorRgb:'#ffad46',modifiedTime:'2026-08-01T10:00:00Z'} ],
+    files:[ {id:'a1',name:'فاتورة كهرباء أغسطس.jpg',mimeType:'image/jpeg',size:812000,modifiedTime:'2026-08-30T10:00:00Z',parents:['f1'],thumbnailLink:svgTh('#f97316','⚡')}, {id:'a2',name:'عقد الإيجار.pdf',mimeType:'application/pdf',size:2400000,modifiedTime:'2026-08-29T09:00:00Z',parents:['f2']}, {id:'a3',name:'IMG_20260828.jpg',mimeType:'image/jpeg',size:1500000,modifiedTime:'2026-08-28T12:00:00Z',parents:['f3'],thumbnailLink:svgTh('#0ea5e9','🌊')}, {id:'a4',name:'شهادة الدورة.pdf',mimeType:'application/pdf',size:640000,modifiedTime:'2026-08-15T12:00:00Z',parents:['f4']}, {id:'a5',name:'ملاحظة_اجتماع.txt',mimeType:'text/plain',size:900,modifiedTime:'2026-08-10T12:00:00Z',parents:['f2']} ] };
+  window.drive = async (path, opts={}) => {
+    await sleep(250);
+    if (path.startsWith('about')) return { storageQuota:{ usage: 4.2e9, limit: 16.1e9 } };
+    if (path.startsWith('files?q=') && !opts.method) { const qs=decodeURIComponent(path.split('q=')[1].split('&')[0]); if (qs.includes(`name='${CONFIG.rootFolderName}'`)) return { files:[{id:'root'}] }; if (qs.includes(`mimeType='${FOLDER_MIME}'`)) return { files:[...D.folders] }; let fs=[...D.files]; const m=qs.match(/'(\w+)' in parents/); if (m) fs=fs.filter(f=>f.parents[0]===m[1]); const c=qs.match(/name contains '([^']*)'/); if (c) fs=fs.filter(f=>f.name.includes(c[1])); if (qs.includes("contains 'image/'")) fs=fs.filter(f=>f.mimeType.startsWith('image/')); if (qs.includes("'application/pdf'")) fs=fs.filter(f=>f.mimeType.includes('pdf')); return { files:fs }; }
+    if (path.startsWith('files/') && path.includes('trashed')) return { id:'root', trashed:false };
+    if (opts.method==='POST' && opts.json?.mimeType===FOLDER_MIME) { const f={ id:'f'+Date.now(), name:opts.json.name, mimeType:FOLDER_MIME, folderColorRgb:opts.json.folderColorRgb, modifiedTime:new Date().toISOString() }; D.folders.push(f); return f; }
+    if (opts.method==='PATCH') { const id=path.split('/')[1].split('?')[0]; const f=D.files.find(x=>x.id===id)||D.folders.find(x=>x.id===id)||{}; if (opts.json.trashed) { D.files=D.files.filter(x=>x.id!==id); D.folders=D.folders.filter(x=>x.id!==id); return {}; } Object.assign(f, opts.json); const ap=path.match(/addParents=(\w+)/); if(ap) f.parents=[ap[1]]; return f; }
+    if (path.includes('/permissions')) return { permissions:[] };
+    if (path.includes('webViewLink')) return { webViewLink:'https://drive.google.com/' };
+    return {};
+  };
+  window.fetchBlob = async url => { const r = await fetch(url); return r.blob(); };
+  window.demoUpload = (it, onp) => new Promise(res => { let p=0; const iv=setInterval(()=>{ p+=20; onp(Math.min(p,100)); if(p>=100){ clearInterval(iv); const f={ id:'u'+Date.now(), name:it.name, mimeType:it.type, size:it.size, modifiedTime:new Date().toISOString(), parents:[it.folderId], thumbnailLink: it.type.startsWith('image/')?URL.createObjectURL(it.blob):'' }; D.files.unshift(f); res(f);} },200); });
+  const _login=doLogin; window.doLogin = async () => { const email=$('lEmail').value.trim().toLowerCase(); if (email!==CONFIG.adminEmail.toLowerCase() && email) { sessionStorage.setItem('kz_demo_user', email); DEMOD.profile.email=email; if(!loadToken(email)) saveToken(email,{access_token:'demo',expires_at:Date.now()+3.6e6,email}); } return _login(); };
+  $('btnLogin').onclick=()=>window.doLogin(); $('lPass').onkeydown=e=>{ if(e.key==='Enter') window.doLogin(); };
+  const _reg=doRegister; window.doRegister = async () => { sessionStorage.setItem('kz_demo_user', S.pending?.email||'demo@gmail.com'); return _reg(); }; $('btnRegister').onclick=()=>window.doRegister();
+  const _out=doLogout; window.doLogout = async () => { sessionStorage.removeItem('kz_demo_user'); return _out(); };
+  ['btnLogout','btnLinkLogout','btnLockLogout','btnBlockLogout'].forEach(id=>$(id).onclick=()=>window.doLogout());
+  $('lEmail').placeholder='أي بريد للتجربة'; $('lPass').placeholder='أي 6 أحرف';
+}
+boot();
+</script>
+</body>
+</html>
