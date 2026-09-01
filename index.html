@@ -334,7 +334,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
    <button class="btn light" id="btnRelinkSet" style="margin-top:8px">إعادة ربط حساب Google</button>
    <button class="btn danger" id="btnLogout" style="margin-top:8px">تسجيل الخروج</button>
   </div>
-  <p class="muted small center" style="margin-top:14px">خزنة v1.0</p>
+  <p class="muted small center" style="margin-top:14px">خزنة v1.1</p>
  </div>
  <div class="tabbar" data-tabs>
   <button class="tab" data-go="s-home"><svg class="i"><use href="#i-home"/></svg>الرئيسية</button>
@@ -402,7 +402,7 @@ const CONFIG = {
   adminEmail: "a0545777031@gmail.com",
   googleClientId: "854348562788-bdj4f2gh1m5ktv4d48e3b7p693duuu2p.apps.googleusercontent.com",
   rootFolderName: "خزنة",
-  version: "1.0"
+  version: "1.1"
 };
 const DEMO = !CONFIG.firebase.apiKey || typeof firebase === 'undefined' || /claude|localhost/.test(location.hostname);
 const DRIVE = 'https://www.googleapis.com/drive/v3/';
@@ -451,7 +451,7 @@ settingsLoad();
 /* ===================== GOOGLE OAUTH (redirect, implicit) ===================== */
 function redirectUri(){ let p = location.pathname.replace(/index\.html$/,''); return location.origin + p; }
 function tokenKey(email){ return 'kz_tok_'+(email||'').toLowerCase(); }
-function loadToken(email){ try{ const t=JSON.parse(localStorage.getItem(tokenKey(email))||'null'); return t && t.expires_at > Date.now()+30000 ? t : null; }catch{ return null; } }
+function loadToken(email){ try{ const t=JSON.parse(localStorage.getItem(tokenKey(email))||'null'); return t && t.expires_at > Date.now()+30000 && (t.scope||'').includes('drive.file') ? t : null; }catch{ return null; } }
 function saveToken(email, t){ localStorage.setItem(tokenKey(email), JSON.stringify(t)); }
 function googleAuth(state, hint, prompt){
   if (DEMO) { demoOAuthReturn(state); return; }
@@ -468,7 +468,8 @@ async function handleOAuthReturn(){
   history.replaceState(null, '', location.pathname + location.search);
   if (h.get('error')) return { error: h.get('error'), st };
   if (!h.get('access_token')) return null;
-  const tok = { access_token: h.get('access_token'), expires_at: Date.now() + (+h.get('expires_in')||3600)*1000 };
+  const tok = { access_token: h.get('access_token'), expires_at: Date.now() + (+h.get('expires_in')||3600)*1000, scope: h.get('scope')||'' };
+  if (!tok.scope.includes('drive.file')) return { error:'no_drive_scope', st };
   try {
     const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers:{ Authorization:'Bearer '+tok.access_token } });
     const info = await r.json();
@@ -494,7 +495,7 @@ async function drive(path, opts={}){
   if (opts.json) { headers['Content-Type']='application/json'; opts.body = JSON.stringify(opts.json); }
   const r = await fetch(path.startsWith('http')?path:DRIVE+path, { method: opts.method||'GET', headers, body: opts.body });
   if (r.status===401) { localStorage.removeItem(tokenKey(S.email)); S.token=null; await ensureToken(); throw new Error('auth'); }
-  if (r.status===403) { let e={}; try{e=await r.json();}catch{} throw new Error(e.error?.message||'403'); }
+  if (r.status===403) { let e={}; try{e=await r.json();}catch{} const m=e.error?.message||'403'; if (/scope/i.test(m)) { localStorage.removeItem(tokenKey(S.email)); S.token=null; showLink('لم يُمنح التطبيق إذن Google Drive. اضغط "ربط حساب Google" ووافق على صلاحية Drive.'); throw new Error('redirecting'); } throw new Error(m); }
   if (!r.ok) { let e={}; try{e=await r.json();}catch{} throw new Error(e.error?.message||('HTTP '+r.status)); }
   if (r.status===204) return {};
   return r.json();
@@ -849,13 +850,13 @@ $('btnSaveName').onclick=async()=>{ await saveProfile({ name:$('setName').value.
 $('btnChangePass').onclick=()=>{ sheet(`<h2>تغيير كلمة المرور</h2><div class="field"><label>الحالية</label><input type="password" id="cp0"></div><div class="field"><label>الجديدة</label><input type="password" id="cp1"></div><div class="field"><label>تأكيد الجديدة</label><input type="password" id="cp2"></div><div class="err" id="cpErr"></div><button class="btn" id="cpOk">حفظ</button>`);
   $('cpOk').onclick=async()=>{ const a=$('cp0').value,b=$('cp1').value,c=$('cp2').value; if(b.length<6) return $('cpErr').textContent='6 أحرف على الأقل'; if(b!==c) return $('cpErr').textContent='غير متطابقتين'; try{ if(!DEMO){ const cred=firebase.auth.EmailAuthProvider.credential(S.user.email,a); await S.user.reauthenticateWithCredential(cred); await S.user.updatePassword(b);} closeSheet(); toast('تم تغيير كلمة المرور'); }catch(e){ $('cpErr').textContent=authErr(e); } }; };
 $('btnOpenDrive').onclick=()=>window.open(S.rootId?('https://drive.google.com/drive/folders/'+S.rootId):'https://drive.google.com','_blank');
-$('btnRelinkSet').onclick=()=>googleAuth({a:'reauth'}, S.email, 'select_account');
-$('btnRelink').onclick=()=>googleAuth({a:'reauth'}, S.email, 'select_account');
+$('btnRelinkSet').onclick=()=>googleAuth({a:'reauth'}, S.email, 'consent');
+$('btnRelink').onclick=()=>googleAuth({a:'reauth'}, S.email, 'consent');
 $('btnLogout').onclick=doLogout; $('btnLinkLogout').onclick=doLogout; $('btnLockLogout').onclick=doLogout; $('btnBlockLogout').onclick=doLogout;
 /* auth buttons */
 $('btnLogin').onclick=doLogin; $('lPass').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
 $('btnGoReg').onclick=()=>{ $('regStep1').classList.remove('hidden'); $('regStep2').classList.add('hidden'); $('st2').classList.remove('on'); show('s-register'); };
-$('btnLinkGoogle').onclick=()=>googleAuth({a:'link'}, '', 'select_account');
+$('btnLinkGoogle').onclick=()=>googleAuth({a:'link'}, '', 'select_account consent');
 $('btnRegister').onclick=doRegister; $('btnUnlock').onclick=doUnlock; $('kPass').onkeydown=e=>{ if(e.key==='Enter') doUnlock(); };
 $('btnBio').onclick=async()=>{ try{ await bioVerify(); sessionStorage.setItem('kz_unlocked','1'); await afterLogin(); }catch{ toast('لم يتم التحقق'); } };
 $('btnForgot').onclick=async()=>{ const email=$('lEmail').value.trim(); if(!email) return $('lErr').textContent='اكتب بريدك أولًا'; try{ if(!DEMO) await auth.sendPasswordResetEmail(email); toast('أرسلنا رابط إعادة التعيين إلى بريدك',3500); }catch(e){ $('lErr').textContent=authErr(e); } };
@@ -872,6 +873,10 @@ async function boot(){
         if (ret.tok.email !== user.email.toLowerCase()) { S.user=user; S.email=user.email.toLowerCase(); await loadProfile(); renderIdentity(); showLink(`اخترت حساب ${ret.tok.email} بينما حسابك المسجل هو ${S.email}. اختر الحساب الصحيح.`); return; }
         saveToken(ret.tok.email, ret.tok); sessionStorage.removeItem('kz_silent_try');
       }
+    } else if (ret && ret.error==='no_drive_scope') {
+      if (user) { S.user=user; S.email=user.email.toLowerCase(); await loadProfile(); renderIdentity(); showLink('لم توافق على صلاحية Google Drive. أعد الربط وتأكد من تفعيل خيار «الملفات التي تستخدمها مع هذا التطبيق».'); }
+      else { $('rErr1').textContent='لم توافق على صلاحية Google Drive. أعد المحاولة وفعّل خيار Drive في شاشة الموافقة.'; $('regStep1').classList.remove('hidden'); $('regStep2').classList.add('hidden'); show('s-register'); }
+      return;
     } else if (ret && ret.error && user) {
       S.user=user; S.email=user.email.toLowerCase(); await loadProfile(); renderIdentity();
       if (ret.st.a==='reauth' && ['interaction_required','login_required','consent_required'].includes(ret.error) && !sessionStorage.getItem('kz_reauth2')) { sessionStorage.setItem('kz_reauth2','1'); googleAuth({a:'reauth'}, S.email, 'select_account'); return; }
@@ -893,7 +898,7 @@ if ('serviceWorker' in navigator && !DEMO) navigator.serviceWorker.register('sw.
 
 /* ===================== DEMO MODE (preview only) ===================== */
 const DEMOD = { profile:{ email:'demo@gmail.com', name:'فيصل', status:'active', photo:'' } };
-function demoOAuthReturn(state){ const tok={ access_token:'demo', expires_at:Date.now()+3.6e6, email: S.email||'demo@gmail.com', name:'فيصل', picture:'' }; if (state.a==='link') showRegisterStep2({ email:'demo@gmail.com', name:'فيصل', picture:'', tok }); else { saveToken(S.email,tok); afterLogin(); } }
+function demoOAuthReturn(state){ const tok={ access_token:'demo', expires_at:Date.now()+3.6e6, scope:'drive.file', email: S.email||'demo@gmail.com', name:'فيصل', picture:'' }; if (state.a==='link') showRegisterStep2({ email:'demo@gmail.com', name:'فيصل', picture:'', tok }); else { saveToken(S.email,tok); afterLogin(); } }
 if (DEMO) {
   const svgTh = (c,t) => 'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="${c}"/><text x="100" y="115" font-size="60" text-anchor="middle" fill="#fff" font-family="sans-serif">${t}</text></svg>`);
   const D = { folders:[ {id:'f1',name:'فواتير',mimeType:FOLDER_MIME,folderColorRgb:'#fb4c2f',modifiedTime:'2026-08-30T10:00:00Z'}, {id:'f2',name:'أوراق العمل',mimeType:FOLDER_MIME,folderColorRgb:'#4986e7',modifiedTime:'2026-08-28T10:00:00Z'}, {id:'f3',name:'صور العائلة',mimeType:FOLDER_MIME,folderColorRgb:'#16a765',modifiedTime:'2026-08-20T10:00:00Z'}, {id:'f4',name:'شهادات',mimeType:FOLDER_MIME,folderColorRgb:'#ffad46',modifiedTime:'2026-08-01T10:00:00Z'} ],
@@ -911,7 +916,7 @@ if (DEMO) {
   };
   window.fetchBlob = async url => { const r = await fetch(url); return r.blob(); };
   window.demoUpload = (it, onp) => new Promise(res => { let p=0; const iv=setInterval(()=>{ p+=20; onp(Math.min(p,100)); if(p>=100){ clearInterval(iv); const f={ id:'u'+Date.now(), name:it.name, mimeType:it.type, size:it.size, modifiedTime:new Date().toISOString(), parents:[it.folderId], thumbnailLink: it.type.startsWith('image/')?URL.createObjectURL(it.blob):'' }; D.files.unshift(f); res(f);} },200); });
-  const _login=doLogin; window.doLogin = async () => { const email=$('lEmail').value.trim().toLowerCase(); if (email!==CONFIG.adminEmail.toLowerCase() && email) { sessionStorage.setItem('kz_demo_user', email); DEMOD.profile.email=email; if(!loadToken(email)) saveToken(email,{access_token:'demo',expires_at:Date.now()+3.6e6,email}); } return _login(); };
+  const _login=doLogin; window.doLogin = async () => { const email=$('lEmail').value.trim().toLowerCase(); if (email!==CONFIG.adminEmail.toLowerCase() && email) { sessionStorage.setItem('kz_demo_user', email); DEMOD.profile.email=email; if(!loadToken(email)) saveToken(email,{access_token:'demo',expires_at:Date.now()+3.6e6,scope:'drive.file',email}); } return _login(); };
   $('btnLogin').onclick=()=>window.doLogin(); $('lPass').onkeydown=e=>{ if(e.key==='Enter') window.doLogin(); };
   const _reg=doRegister; window.doRegister = async () => { sessionStorage.setItem('kz_demo_user', S.pending?.email||'demo@gmail.com'); return _reg(); }; $('btnRegister').onclick=()=>window.doRegister();
   const _out=doLogout; window.doLogout = async () => { sessionStorage.removeItem('kz_demo_user'); return _out(); };
