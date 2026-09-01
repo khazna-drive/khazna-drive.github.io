@@ -334,7 +334,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
    <button class="btn light" id="btnRelinkSet" style="margin-top:8px">إعادة ربط حساب Google</button>
    <button class="btn danger" id="btnLogout" style="margin-top:8px">تسجيل الخروج</button>
   </div>
-  <p class="muted small center" style="margin-top:14px">خزنة v1.1</p>
+  <p class="muted small center" style="margin-top:14px">خزنة v1.2</p>
  </div>
  <div class="tabbar" data-tabs>
   <button class="tab" data-go="s-home"><svg class="i"><use href="#i-home"/></svg>الرئيسية</button>
@@ -402,7 +402,7 @@ const CONFIG = {
   adminEmail: "a0545777031@gmail.com",
   googleClientId: "854348562788-bdj4f2gh1m5ktv4d48e3b7p693duuu2p.apps.googleusercontent.com",
   rootFolderName: "خزنة",
-  version: "1.1"
+  version: "1.2"
 };
 const DEMO = !CONFIG.firebase.apiKey || typeof firebase === 'undefined' || /claude|localhost/.test(location.hostname);
 const DRIVE = 'https://www.googleapis.com/drive/v3/';
@@ -563,12 +563,15 @@ const IDB = { db:null,
 };
 let QUEUE = [], uploading = false;
 async function loadQueue(){ try { QUEUE = (await IDB.all()).filter(x => x.email===S.email); } catch { QUEUE=[]; } renderQueue(); }
-async function enqueue(files, folder){
-  let n = 0;
+async function enqueue(files, folder, names){
+  let n = 0, idx = 0;
   for (const file of files) {
     let blob = file, name = file.name || 'file';
     if (file.type.startsWith('image/') && S.settings.compress!=='original') { try { blob = await compressImage(file, S.settings.compress==='small'?1024:1600); name = name.replace(/\.(heic|heif|png|webp)$/i,'.jpg'); } catch{} }
-    if (S.settings.autoName || !file.name || /^image\.(jpe?g|png)$/i.test(file.name)) { const d=new Date(); const ext = (name.split('.').pop()||'jpg').toLowerCase(); name = `${d.toISOString().slice(0,10)}_${folder.name}_${String(++n + QUEUE.length).padStart(2,'0')}.${ext}`; }
+    const ext = (name.includes('.') ? name.split('.').pop() : (file.type.split('/')[1]||'bin')).toLowerCase();
+    const custom = names && names[idx++];
+    if (custom) name = custom.replace(/[\\/:*?"<>|]/g,'-') + '.' + ext;
+    else if (S.settings.autoName || !file.name || /^image\.(jpe?g|png)$/i.test(file.name)) { const d=new Date(); name = `${d.toISOString().slice(0,10)}_${folder.name}_${String(++n + QUEUE.length).padStart(2,'0')}.${ext}`; }
     const it = { id: Date.now()+'_'+Math.random().toString(36).slice(2), email:S.email, name, type: blob.type||file.type||'application/octet-stream', size: blob.size, blob, folderId: folder.id, folderName: folder.name, status:'queued', progress:0, created: Date.now() };
     QUEUE.push(it); try { await IDB.put(it); } catch{}
   }
@@ -790,6 +793,17 @@ function pickFolder(title, cb, allowNew=true){
   render();
 }
 function newFolderDialogPromise(){ return new Promise(res => { newFolderDialog(); const ok=$('nfOk'); const orig=ok.onclick; ok.onclick=async()=>{ const f = await orig(); res(f||null); }; $('ov').addEventListener('click', function h(e){ if(e.target===$('ov')){ $('ov').removeEventListener('click',h); res(null);} }); }); }
+/* naming dialog */
+function suggestName(file){ const base=(file.name||'').replace(/\.[^.]+$/,''); if (!base || /^(image|img_?\d*|photo)$/i.test(base)) { const d=new Date(); return `${d.toISOString().slice(0,10)}_${d.toTimeString().slice(0,5).replace(':','')}`; } return base; }
+function askNames(files, folder){
+  const many = files.length > 8;
+  const rows = many ? '' : files.map((f,i)=>`<div class="row" style="margin-bottom:8px"><span class="th" id="nth_${i}" style="width:44px;height:44px;border-radius:10px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);overflow:hidden;flex:none"><svg class="i"><use href="#${fileIcon(f.type)}"/></svg></span><div class="field grow" style="margin:0"><input dir="rtl" data-nm="${i}" value="${esc(suggestName(f))}" placeholder="اسم المرفق"></div></div>`).join('');
+  sheet(`<h2>اسم المرفق${files.length>1?'ات':''}</h2><p class="muted small">اكتب اسمًا واضحًا يسهّل البحث لاحقًا. سيُحفظ في «${esc(folder.name)}»</p>${many?`<div class="field"><label>اسم موحد (سيُضاف ترقيم تلقائي لـ ${files.length} ملف)</label><input dir="rtl" id="nmBase" value="${esc(suggestName(files[0]))}"></div>`:rows}<button class="btn" id="nmOk" style="margin-top:8px"><svg class="i"><use href="#i-share"/></svg> رفع</button>`);
+  if (!many) files.forEach((f,i)=>{ if (f.type.startsWith('image/')) { const u=URL.createObjectURL(f); const t=$('nth_'+i); if(t) t.innerHTML=`<img src="${u}" style="width:100%;height:100%;object-fit:cover">`; } });
+  setTimeout(()=>{ const first=$('sheet').querySelector('input'); if(first){ first.focus(); first.select(); } },150);
+  $('sheet').querySelectorAll('input').forEach(inp=>inp.onkeydown=e=>{ if(e.key==='Enter') $('nmOk').click(); });
+  $('nmOk').onclick=()=>{ let names; if (many) { const b=$('nmBase').value.trim(); names = files.map((f,i)=> b ? `${b}_${String(i+1).padStart(2,'0')}` : ''); } else names = files.map((f,i)=>$('sheet').querySelector(`[data-nm="${i}"]`).value.trim()); closeSheet(); enqueue(files, folder, names); };
+}
 /* source pickers */
 let pendingFolder = null;
 function pickSource(folder){
@@ -810,9 +824,9 @@ async function preUpload(inputId){
 }
 function handleFiles(input){
   const files = Array.from(input.files||[]); if (!files.length) return;
-  if (pendingFolder) { const f=pendingFolder; pendingFolder=null; enqueue(files, f); return; }
-  if (S.currentFolder && $('s-folder').classList.contains('on')) { enqueue(files, S.currentFolder); return; }
-  pickFolder(`حفظ ${files.length>1?files.length+' ملفات':'الملف'} في`, f => enqueue(files, f));
+  if (pendingFolder) { const f=pendingFolder; pendingFolder=null; askNames(files, f); return; }
+  if (S.currentFolder && $('s-folder').classList.contains('on')) { askNames(files, S.currentFolder); return; }
+  pickFolder(`حفظ ${files.length>1?files.length+' ملفات':'الملف'} في`, f => askNames(files, f));
 }
 ['inCam','inGal','inFile'].forEach(id => $(id).addEventListener('change', () => handleFiles($(id))));
 $('aCam').onclick=()=>preUpload('inCam'); $('aGal').onclick=()=>preUpload('inGal'); $('aFile').onclick=()=>preUpload('inFile');
