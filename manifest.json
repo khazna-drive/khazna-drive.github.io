@@ -1,6 +1,6 @@
 {
-  "name": "خزنة",
-  "short_name": "خزنة",
+  "name": "الدفتر",
+  "short_name": "الدفتر",
   "description": "احفظ صورك وملفاتك في مجلدات داخل Google Drive",
   "start_url": "./index.html",
   "scope": "./",
