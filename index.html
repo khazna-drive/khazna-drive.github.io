@@ -649,7 +649,7 @@ async function doLogin(){
   } catch(e) { $('lErr').textContent = authErr(e); }
   $('btnLogin').disabled = false;
 }
-function authErr(e){ const c=e.code||''; if (c.includes('wrong-password')||c.includes('invalid-credential')||c.includes('invalid-login')) return 'كلمة المرور غير صحيحة'; if (c.includes('user-not-found')) return 'لا يوجد حساب بهذا البريد — سجّل كمستخدم جديد'; if (c.includes('too-many')) return 'محاولات كثيرة، حاول لاحقًا'; if (c.includes('network')) return 'تعذر الاتصال بالإنترنت'; if (c.includes('email-already')) return 'هذا البريد مسجل مسبقًا — سجّل الدخول'; if (c.includes('weak')) return 'كلمة المرور ضعيفة'; if (c.includes('invalid-email')) return 'البريد غير صحيح'; return e.message||'حدث خطأ'; }
+function authErr(e){ const c=e.code||''; if (c.includes('wrong-password')||c.includes('invalid-credential')||c.includes('invalid-login')) return 'البريد أو كلمة المرور غير صحيحة'; if (c.includes('user-not-found')) return 'لا يوجد حساب بهذا البريد — سجّل كمستخدم جديد'; if (c.includes('too-many')) return 'محاولات كثيرة، حاول لاحقًا'; if (c.includes('network')) return 'تعذر الاتصال بالإنترنت'; if (c.includes('email-already')) return 'هذا البريد مسجل مسبقًا — سجّل الدخول'; if (c.includes('weak')) return 'كلمة المرور ضعيفة'; if (c.includes('invalid-email')) return 'البريد غير صحيح'; return e.message||'حدث خطأ'; }
 async function afterLogin(){
   S.email = S.user.email.toLowerCase();
   await loadProfile();
