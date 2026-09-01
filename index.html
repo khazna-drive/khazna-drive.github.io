@@ -166,6 +166,14 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .steps i.on{background:var(--accent)}
 .breadcrumb{font-size:13px;color:var(--muted)}
 .hidden{display:none!important}
+.pages{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pg{background:var(--card);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;position:relative}
+.pg img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#fff}
+.pg .n{position:absolute;top:6px;right:6px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:8px;padding:1px 8px}
+.pg .tools{display:flex;justify-content:space-around;padding:6px}
+.pg .tools button{background:none;border:0;color:var(--muted);padding:6px;cursor:pointer}
+.pg .tools button svg{width:20px;height:20px}
+.scanbar{position:absolute;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:5}
 #app.hasbg{background-size:cover;background-position:center}
 #app.hasbg .hdr{background:transparent}
 #app.hasbg .card,#app.hasbg .act,#app.hasbg .folder,#app.hasbg .file{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -354,7 +362,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
    <button class="btn light" id="btnRelinkSet" style="margin-top:8px">إعادة ربط حساب Google</button>
    <button class="btn danger" id="btnLogout" style="margin-top:8px">تسجيل الخروج</button>
   </div>
-  <p class="muted small center" style="margin-top:14px">خزنة v1.6</p>
+  <p class="muted small center" style="margin-top:14px">خزنة v1.7</p>
  </div>
  <div class="tabbar" data-tabs>
   <button class="tab" data-go="s-home"><svg class="i"><use href="#i-home"/></svg>الرئيسية</button>
@@ -362,6 +370,14 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
   <button class="tab" data-go="s-search"><svg class="i"><use href="#i-search"/></svg>بحث</button>
   <button class="tab on" data-go="s-settings"><svg class="i"><use href="#i-settings"/></svg>الإعدادات</button>
  </div>
+</div>
+
+<!-- scanner -->
+<div class="screen" id="s-scan">
+ <div class="hdr"><button class="icbtn plain" id="btnScanBack"><svg class="i"><use href="#i-back"/></svg></button><h2>مسح ضوئي</h2></div>
+ <div class="row" style="padding:0 16px 8px"><span class="muted small">التحسين:</span><div class="chips" id="scanFilter"><button class="chip on" data-sf="doc">مستند</button><button class="chip" data-sf="gray">رمادي</button><button class="chip" data-sf="orig">أصلي</button></div></div>
+ <div class="scroll" style="padding-top:0;padding-bottom:calc(150px + env(safe-area-inset-bottom))"><div id="scanHint" class="empty"><svg class="i"><use href="#i-camera"/></svg><br>صوّر الصفحة الأولى، ثم التالية… بلا حد للعدد<br><span class="small">تُحفظ كلها في ملف PDF واحد</span></div><div class="pages" id="scanPages"></div></div>
+ <div class="scanbar"><button class="btn" id="btnScanCam"><svg class="i"><use href="#i-camera"/></svg> تصوير صفحة</button><button class="btn light" id="btnScanGal" style="width:auto"><svg class="i"><use href="#i-image"/></svg></button><button class="btn ghost" id="btnScanSave" disabled><svg class="i"><use href="#i-pdf"/></svg> حفظ PDF <span id="scanCount"></span></button></div>
 </div>
 
 <!-- blocked / expired -->
@@ -377,6 +393,8 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 <input type="file" id="inFile" multiple class="hidden">
 <input type="file" id="inAvatar" accept="image/*" class="hidden">
 <input type="file" id="inBg" accept="image/*" class="hidden">
+<input type="file" id="inScanCam" accept="image/*" capture="environment" class="hidden">
+<input type="file" id="inScanGal" accept="image/*" multiple class="hidden">
 </div>
 
 <svg width="0" height="0" style="position:absolute">
@@ -409,6 +427,8 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 <symbol id="i-finger" viewBox="0 0 24 24"><path d="M12 11a2 2 0 0 0-2 2v3c0 2 1 3 2 4"/><path d="M8 13v2c0 3 1.5 5 3 6"/><path d="M16 13v2a8 8 0 0 1-1 4"/><path d="M6 10a6 6 0 0 1 12 0v1"/><path d="M4.5 12.5A8 8 0 0 1 4 10a8 8 0 0 1 14-5.3"/></symbol>
 <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></symbol>
 <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 17v-5h1.5a1.5 1.5 0 0 1 0 3H9"/></symbol>
+<symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></symbol>
+<symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M4 12h16"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
 <symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.7-8.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17.5 18H7z"/><path d="m3 3 18 18"/></symbol>
 </defs>
@@ -423,7 +443,7 @@ const CONFIG = {
   adminEmail: "a0545777031@gmail.com",
   googleClientId: "854348562788-bdj4f2gh1m5ktv4d48e3b7p693duuu2p.apps.googleusercontent.com",
   rootFolderName: "خزنة",
-  version: "1.6"
+  version: "1.7"
 };
 const DEMO = !CONFIG.firebase.apiKey || typeof firebase === 'undefined' || /claude|localhost/.test(location.hostname);
 const DRIVE = 'https://www.googleapis.com/drive/v3/';
@@ -841,7 +861,9 @@ function pickSource(folder){
   <button class="opt" id="srcCam"><span class="ic"><svg class="i"><use href="#i-camera"/></svg></span>تصوير بالكاميرا</button>
   <button class="opt" id="srcGal"><span class="ic"><svg class="i"><use href="#i-image"/></svg></span>من الصور والفيديو</button>
   <button class="opt" id="srcFile"><span class="ic"><svg class="i"><use href="#i-file"/></svg></span>من الملفات</button>
+  <button class="opt" id="srcScan"><span class="ic"><svg class="i"><use href="#i-scan"/></svg></span>مسح ضوئي لأوراق ← PDF واحد</button>
   <button class="opt" id="srcNote"><span class="ic"><svg class="i"><use href="#i-edit"/></svg></span>ملاحظة نصية</button>`);
+  $('srcScan').onclick=()=>{ closeSheet(); openScanner(folder); };
   $('srcCam').onclick=()=>{closeSheet();$('inCam').click();}; $('srcGal').onclick=()=>{closeSheet();$('inGal').click();}; $('srcFile').onclick=()=>{closeSheet();$('inFile').click();};
   $('srcNote').onclick=async()=>{ closeSheet(); const t=await noteDialog(); if(!t) return; const d=new Date(); const name=`ملاحظة_${d.toISOString().slice(0,10)}_${d.toTimeString().slice(0,5).replace(':','')}.txt`; enqueue([new File([t], name, {type:'text/plain'})], folder); };
 }
@@ -862,7 +884,9 @@ $('aAdd').onclick=()=>{ sheet(`<h2>إضافة</h2><p class="muted small">اخت�
   <button class="opt" id="addCam"><span class="ic"><svg class="i"><use href="#i-camera"/></svg></span>تصوير بالكاميرا</button>
   <button class="opt" id="addGal"><span class="ic"><svg class="i"><use href="#i-image"/></svg></span>من الصور والفيديو</button>
   <button class="opt" id="addFile"><span class="ic"><svg class="i"><use href="#i-file"/></svg></span>من الملفات</button>
+  <button class="opt" id="addScan"><span class="ic"><svg class="i"><use href="#i-scan"/></svg></span>مسح ضوئي لأوراق ← PDF واحد</button>
   <button class="opt" id="addNote"><span class="ic"><svg class="i"><use href="#i-edit"/></svg></span>ملاحظة نصية</button>`);
+  $('addScan').onclick=()=>{ closeSheet(); openScanner(); };
   $('addCam').onclick=()=>{closeSheet();preUpload('inCam');}; $('addGal').onclick=()=>{closeSheet();preUpload('inGal');}; $('addFile').onclick=()=>{closeSheet();preUpload('inFile');};
   $('addNote').onclick=()=>{ closeSheet(); pickFolder('حفظ الملاحظة في', async folder => { const t=await noteDialog(); if(!t) return; const d=new Date(); const name=`ملاحظة_${d.toISOString().slice(0,10)}_${d.toTimeString().slice(0,5).replace(':','')}.txt`; askNames([new File([t], name, {type:'text/plain'})], folder); }); }; };
 $('aNewFolder').onclick=newFolderDialog; $('btnFoldersNew').onclick=newFolderDialog; $('btnAllFolders').onclick=()=>go('s-folders');
@@ -891,6 +915,47 @@ async function runSearch(){
   try { const files = await searchFiles(text, S.ft); renderFiles(el, files, 'list'); if (files.length) { const map=Object.fromEntries(S.folders.map(f=>[f.id,f.name])); el.querySelectorAll('[data-file]').forEach(b=>{ const f=files.find(x=>x.id===b.dataset.file); const p=map[(f.parents||[])[0]]; if(p) b.querySelector('.dt').textContent = p+' · '+fmtDate(f.modifiedTime); }); } }
   catch(e){ el.innerHTML=`<div class="empty">${esc(e.message)}</div>`; }
 }
+/* scanner */
+const SCAN = { pages:[], filter:'doc', folder:null };
+function openScanner(folder){ SCAN.folder=folder||null; show('s-scan'); renderScan(); }
+$('btnScanBack').onclick=async()=>{ if (SCAN.pages.length && !await confirm2('إلغاء المسح','ستُحذف الصفحات الملتقطة (' + SCAN.pages.length + '). هل تريد الخروج؟','خروج')) return; SCAN.pages=[]; show(S.currentFolder && SCAN.folder ? 's-folder' : 's-home'); };
+document.querySelectorAll('#scanFilter .chip').forEach(c=>c.onclick=async()=>{ document.querySelectorAll('#scanFilter .chip').forEach(x=>x.classList.toggle('on',x===c)); SCAN.filter=c.dataset.sf; for (const p of SCAN.pages) await processPage(p); renderScan(); });
+$('btnScanCam').onclick=()=>{ $('inScanCam').value=''; $('inScanCam').click(); };
+$('btnScanGal').onclick=()=>{ $('inScanGal').value=''; $('inScanGal').click(); };
+['inScanCam','inScanGal'].forEach(id=>$(id).addEventListener('change', async ()=>{ const files=Array.from($(id).files||[]); for (const f of files) { const p={ file:f, rot:0, url:'' }; SCAN.pages.push(p); await processPage(p); renderScan(); } }));
+function loadImg(file){ return new Promise((res,rej)=>{ const img=new Image(); const u=URL.createObjectURL(file); img.onload=()=>{ URL.revokeObjectURL(u); res(img); }; img.onerror=()=>{URL.revokeObjectURL(u); rej();}; img.src=u; }); }
+async function processPage(p){
+  const img = p.img || (p.img = await loadImg(p.file));
+  const max=1800; const k=Math.min(1, max/Math.max(img.width,img.height));
+  let w=Math.round(img.width*k), h=Math.round(img.height*k);
+  const c=document.createElement('canvas'); const rot=p.rot%360; if (rot===90||rot===270) { c.width=h; c.height=w; } else { c.width=w; c.height=h; }
+  const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.save(); x.translate(c.width/2,c.height/2); x.rotate(rot*Math.PI/180); x.drawImage(img,-w/2,-h/2,w,h); x.restore();
+  if (SCAN.filter!=='orig') { const d=x.getImageData(0,0,c.width,c.height), a=d.data; let lo=255, hi=0; const hist=new Uint32Array(256); for (let i=0;i<a.length;i+=4){ const g=(a[i]*299+a[i+1]*587+a[i+2]*114)/1000|0; a[i]=g; hist[g]++; } const total=a.length/4; let acc=0; for (let i=0;i<256;i++){ acc+=hist[i]; if (acc>total*0.02){ lo=i; break; } } acc=0; for (let i=255;i>=0;i--){ acc+=hist[i]; if (acc>total*0.02){ hi=i; break; } } const range=Math.max(1,hi-lo); for (let i=0;i<a.length;i+=4){ let v=(a[i]-lo)/range*255; if (SCAN.filter==='doc') { v=(v-128)*1.35+128+18; } v=v<0?0:v>255?255:v; a[i]=a[i+1]=a[i+2]=v; } x.putImageData(d,0,0); }
+  p.dataUrl = c.toDataURL('image/jpeg', 0.82); p.w=c.width; p.h=c.height;
+}
+function renderScan(){
+  const el=$('scanPages'); $('scanHint').classList.toggle('hidden', SCAN.pages.length>0);
+  el.innerHTML = SCAN.pages.map((p,i)=>`<div class="pg"><img src="${p.dataUrl}"><span class="n">${i+1}</span><div class="tools"><button data-rot="${i}" title="تدوير"><svg class="i"><use href="#i-rotate"/></svg></button><button data-up="${i}" title="قبل" ${i===0?'disabled':''}><svg class="i" style="transform:rotate(90deg)"><use href="#i-back"/></svg></button><button data-dn="${i}" title="بعد" ${i===SCAN.pages.length-1?'disabled':''}><svg class="i" style="transform:rotate(-90deg)"><use href="#i-back"/></svg></button><button data-del="${i}" title="حذف" style="color:var(--danger)"><svg class="i"><use href="#i-trash"/></svg></button></div></div>`).join('');
+  el.querySelectorAll('[data-rot]').forEach(b=>b.onclick=async()=>{ const p=SCAN.pages[+b.dataset.rot]; p.rot=(p.rot+90)%360; await processPage(p); renderScan(); });
+  el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ SCAN.pages.splice(+b.dataset.del,1); renderScan(); });
+  el.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.up; [SCAN.pages[i-1],SCAN.pages[i]]=[SCAN.pages[i],SCAN.pages[i-1]]; renderScan(); });
+  el.querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.dn; [SCAN.pages[i+1],SCAN.pages[i]]=[SCAN.pages[i],SCAN.pages[i+1]]; renderScan(); });
+  $('btnScanSave').disabled = !SCAN.pages.length; $('scanCount').textContent = SCAN.pages.length ? `(${SCAN.pages.length})` : '';
+}
+function loadJsPDF(){ return new Promise((res,rej)=>{ if (window.jspdf) return res(); const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; sc.onload=res; sc.onerror=()=>rej(new Error('تعذر تحميل مكوّن PDF — تحقق من الاتصال')); document.head.appendChild(sc); }); }
+async function buildPdf(){
+  await loadJsPDF(); const { jsPDF } = window.jspdf; let doc=null;
+  for (const p of SCAN.pages) { const land = p.w > p.h; const or = land?'l':'p'; if (!doc) doc = new jsPDF({ orientation:or, unit:'mm', format:'a4', compress:true }); else doc.addPage('a4', or);
+    const pw=doc.internal.pageSize.getWidth(), ph=doc.internal.pageSize.getHeight(); const m=6; const k=Math.min((pw-2*m)/p.w, (ph-2*m)/p.h); const w=p.w*k, h=p.h*k; doc.addImage(p.dataUrl,'JPEG',(pw-w)/2,(ph-h)/2,w,h,undefined,'FAST'); }
+  return doc.output('blob');
+}
+$('btnScanSave').onclick=async()=>{
+  if (!SCAN.pages.length) return; $('btnScanSave').disabled=true; toast('جاري إنشاء PDF…');
+  try { const blob = await buildPdf(); const d=new Date(); const file = new File([blob], `مسح_${d.toISOString().slice(0,10)}_${d.toTimeString().slice(0,5).replace(':','')}.pdf`, { type:'application/pdf' });
+    const go = folder => { askNames([file], folder); SCAN.pages=[]; show(SCAN.folder ? 's-folder' : 's-home'); };
+    if (SCAN.folder) go(SCAN.folder); else pickFolder('حفظ ملف PDF في', go);
+  } catch(e){ toast(e.message||'فشل إنشاء PDF'); } $('btnScanSave').disabled=false;
+};
 /* theme */
 const THEMES = [ {n:'تركواز',a:'#0f766e',b:'#14b8a6',d:'#2dd4bf'}, {n:'أزرق',a:'#1d4ed8',b:'#3b82f6',d:'#60a5fa'}, {n:'بنفسجي',a:'#6d28d9',b:'#8b5cf6',d:'#a78bfa'}, {n:'وردي',a:'#be185d',b:'#ec4899',d:'#f472b6'}, {n:'أحمر',a:'#b91c1c',b:'#ef4444',d:'#f87171'}, {n:'برتقالي',a:'#c2410c',b:'#f97316',d:'#fb923c'}, {n:'ذهبي',a:'#a16207',b:'#eab308',d:'#facc15'}, {n:'أخضر',a:'#15803d',b:'#22c55e',d:'#4ade80'}, {n:'رمادي',a:'#374151',b:'#6b7280',d:'#9ca3af'} ];
 function themeLoad(){ try{ return JSON.parse(localStorage.getItem('kz_theme')||'{}'); }catch{ return {}; } }
